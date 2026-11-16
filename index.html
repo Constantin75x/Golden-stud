@@ -440,6 +440,10 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 #sheet textarea{width:100%;box-sizing:border-box;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;margin:6px 0}
 .cty-de{background:#1b1b1b;color:#ffce00;box-shadow:inset 0 -3px #dd0000}
 .cty-us{background:#1f3f86;color:#fff;box-shadow:inset 0 -3px #c8323c}
+.house{display:inline-block;padding:1px 6px;margin-right:4px;border-radius:4px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:1px}
+.h-arqana{background:#7a1f2b;color:#fff}
+.h-tattersalls{background:#1d3b2a;color:#e9d9a6;border:1px solid #e9d9a6}
+.h-goffs{background:#0f4c5c;color:#fff}
 </style>
 </head><body>
 <div id="app"></div>
@@ -654,7 +658,27 @@ const SALES=[
  {k:'october',n:'October Yearling Sale',t:'Deauville',dt:Y=>nthDow(Y,9,2,3),kinds:['Y'],sell:['Y']},
  {k:'autumn',n:'Autumn Sale',t:'Deauville',dt:Y=>nthDow(Y,10,1,3),kinds:['T','T','O','Y','F','J'],sell:['T','O','Y']},
  {k:'elevage',n:"Vente d'Élevage",t:'Deauville',dt:Y=>nthDow(Y,11,6,1),kinds:['F','J','P'],sell:['F','J','P']},
-];
+ // Tattersalls (Newmarket) : dates habituelles, approximatives
+ {k:'tatfeb',h:'Tattersalls',n:'February Sale',t:'Newmarket',dt:Y=>nthDow(Y,1,4,1),kinds:['T','J','P','O'],sell:['T','J','P']},
+ {k:'tatcraven',h:'Tattersalls',n:'Craven Breeze-Up',t:'Newmarket',dt:Y=>nthDow(Y,3,3,3),kinds:['B'],sell:['B']},
+ {k:'tatguineas',h:'Tattersalls',n:'Guineas Breeze-Up & Horses in Training',t:'Newmarket',dt:Y=>addDays(nthDow(Y,4,6,1),-4),kinds:['B','T'],sell:['B','T']},
+ {k:'tatjuly',h:'Tattersalls',n:'July Sale',t:'Newmarket',dt:Y=>nthDow(Y,6,2,2),kinds:['T','J','P','Y'],sell:['T','J','P']},
+ {k:'tatbook1',h:'Tattersalls',n:'October Yearling Sale · Book 1',t:'Newmarket',dt:Y=>nthDow(Y,9,2,1),kinds:['YE'],sell:['Y']},
+ {k:'tatbook2',h:'Tattersalls',n:'October Yearling Sale · Book 2',t:'Newmarket',dt:Y=>addDays(nthDow(Y,9,2,1),6),kinds:['Y','YE'],sell:['Y']},
+ {k:'tatbook3',h:'Tattersalls',n:'October Yearling Sale · Book 3',t:'Newmarket',dt:Y=>addDays(nthDow(Y,9,2,1),9),kinds:['Y'],sell:['Y']},
+ {k:'tathit',h:'Tattersalls',n:'Autumn Horses in Training Sale',t:'Newmarket',dt:Y=>nthDow(Y,9,1,-1),kinds:['T','T','TE','O'],sell:['T','O']},
+ {k:'tatfoal',h:'Tattersalls',n:'December Foal Sale',t:'Newmarket',dt:Y=>dowOnOrAfter(Y,10,23,2),kinds:['F'],sell:['F']},
+ {k:'tatmares',h:'Tattersalls',n:'December Mares Sale',t:'Newmarket',dt:Y=>addDays(dowOnOrAfter(Y,10,23,2),6),kinds:['J','J','P'],sell:['J','P']},
+ // Goffs (Kill, Irlande)
+ {k:'goffeb',h:'Goffs',n:'February Sale',t:'Kill',dt:Y=>nthDow(Y,1,2,1),kinds:['J','T','P'],sell:['J','T','P']},
+ {k:'gofflondon',h:'Goffs',n:'London Sale',t:'Londres',dt:Y=>addDays(dowOnOrAfter(Y,5,14,2),-1),kinds:['TE'],sell:['T']},
+ {k:'goffland',h:'Goffs',n:'Land Rover Sale (sauteurs)',t:'Kill',dt:Y=>nthDow(Y,5,1,-1),kinds:['O'],sell:['O']},
+ {k:'gofforby',h:'Goffs',n:'Orby Sale',t:'Kill',dt:Y=>dowOnOrAfter(Y,8,28,2),kinds:['YE','Y'],sell:['Y']},
+ {k:'goffsport',h:'Goffs',n:"Sportsman's Sale",t:'Kill',dt:Y=>addDays(dowOnOrAfter(Y,8,28,2),2),kinds:['Y'],sell:['Y']},
+ {k:'goffnov',h:'Goffs',n:'November Foal & Breeding Stock Sale',t:'Kill',dt:Y=>dowOnOrAfter(Y,10,15,1),kinds:['F','F','J'],sell:['F','J']},
+ {k:'goffdec',h:'Goffs',n:'December NH Sale',t:'Kill',dt:Y=>dowOnOrAfter(Y,11,1,2),kinds:['O','J'],sell:['O','J']},
+].map(s=>Object.assign({h:'Arqana'},s));
+const HOUSES={Arqana:{url:'https://www.arqana.com/catalogues_resultats.html',lab:'Deauville · Saint-Cloud · Auteuil'},Tattersalls:{url:'https://www.tattersalls.com',lab:'Newmarket'},Goffs:{url:'https://www.goffs.com',lab:'Kill · Irlande'}};
 
 /* Noms fictifs pour les concurrents */
 const NA=['Roi','Prince','Sir','Baron','Lord','Étoile','Ciel','Vent','Reine','Belle','Lady','Miss','Comte','Duc','Petit','Grand'];
@@ -856,22 +880,22 @@ function buildRealSales(){
 }
 function genSaleLots(key){
   const {s,y,d}=saleInfo(key);const lots=[];let no=1;
-  const n={feb:36,breeze:28,steeple:24,summer:36,august:40,arc:20,october:50,autumn:40,elevage:50}[s.k];
+  const n={feb:36,breeze:28,steeple:24,summer:36,august:40,arc:20,october:50,autumn:40,elevage:50,tatbook1:45,tatfoal:50,tatmares:50,gofforby:45,goffnov:50,gofflondon:18}[s.k]||36;
   const flat=Object.keys(SIRE).filter(k=>sireJ(k)<.55),nh=Object.keys(SIRE).filter(k=>sireJ(k)>=.6);
   const bySire=pool=>{const w={};pool.forEach(k=>w[k]=Math.pow(1.6,sireT(k)));return wpick(w)};
   for(let i=0;i<n;i++){
-    const kind=pick(s.kinds);let h;const dam=pick(DAMN)+(Math.random()<.5?'':' II');
+    const kind=pick(s.kinds);let h;const EN=s.h!=='Arqana';const dam=EN?oppNameX():pick(DAMN)+(Math.random()<.5?'':' II');
     const sire=kind==='O'?pick(nh):bySire(flat);
     const elite=kind==='YE'||kind==='TE';
     const dq=82+gauss()*7+(elite?6:0);
     const g=makeGenes(sire,dq,kind==='O'?2400:1800*Math.exp(gauss()*.15),kind==='O'?.75:.22);
     const sex=kind==='J'||kind==='P'?'F':pick(['M','M','F','H']);
     const born=kind==='F'?y:kind==='Y'||kind==='YE'?y-1:kind==='B'?y-2:kind==='J'?y-6-rint(8):kind==='P'?y-3-rint(2):y-3-rint(kind==='O'?4:2);
-    h=newHorse({name:kind==='F'||kind==='Y'||kind==='YE'||kind==='B'?'':pick(NS)+' '+pick(['','II','du Lys','de Brume','Royal','d\'Or']).trim(),sex:kind==='Y'||kind==='YE'||kind==='F'||kind==='B'?(sex==='H'?'M':sex):sex,born,sire,dam,g,origin:`Arqana ${s.n} ${y} · lot ${no}`,status:'lot',gen:true});
+    h=newHorse({name:kind==='F'||kind==='Y'||kind==='YE'||kind==='B'?'':EN?oppNameX():pick(NS)+' '+pick(['','II','du Lys','de Brume','Royal','d\'Or']).trim(),sex:kind==='Y'||kind==='YE'||kind==='F'||kind==='B'?(sex==='H'?'M':sex):sex,born,sire,dam,g,origin:`${s.h} ${s.n} ${y} · lot ${no}`,status:'lot',gen:true});
     if(kind==='T'||kind==='TE'||kind==='O'||kind==='P'){realHistory(h);if(kind==='TE'){h.OR=Math.max(h.OR||0,88+rint(18))}}
     if(kind==='O'){h.school=4;h.jruns=2+rint(5);h.ORj=Math.round(h.cur*.92+h.g.jump*14-4+gauss()*3)}
     if(kind==='J'&&Math.random()<.8){const cs=bySire(flat);h.preg={sire:cs,due:addDays(mkD(y+1,1,1),rint(100)).getTime()}}
-    lots.push(lotFromHorse(h,no++,'Vendeur (catalogue simulé)',kind,key));
+    lots.push(lotFromHorse(h,no++,s.h==='Arqana'?'Vendeur (catalogue simulé)':pick(s.h==='Goffs'?['Élevage du Kildare','Élevage du Tipperary','Élevage du Kilkenny','Élevage du Meath','Élevage du Limerick']:['Élevage du Suffolk','Élevage du Berkshire','Élevage du Yorkshire','Élevage du Hampshire','Élevage du Gloucestershire'])+' (simulé)',kind,key));
   }
   S.lots[key]=lots;
 }
@@ -1946,7 +1970,7 @@ function cineVictory(res,f){
   cine(shots);
 }
 function cinePurchase(list,done){
-  const shots=[{img:'s87',kicker:'Arqana · Deauville',title:'Adjugé !',sub:list.length>1?`${list.length} lots pour ${esc(S.stable)}`:'',dur:3400,fx:'flash',from:[1.1,0,0],to:[1.02,0,0]}];
+  const shots=[{img:'s87',kicker:(list[0]&&list[0].house)||'Arqana · Deauville',title:'Adjugé !',sub:list.length>1?`${list.length} lots pour ${esc(S.stable)}`:'',dur:3400,fx:'flash',from:[1.1,0,0],to:[1.02,0,0]}];
   list.slice(0,4).forEach((x,i)=>shots.push({img:x.kind==='F'?'u42':x.kind==='J'?'u48':x.kind==='Y'||x.kind==='YO'?'u50':x.kind==='ST'||x.kind==='O'?'u113':['u40','u38','u25'][i%3],kicker:`Lot ${lot3(x.no)} · ${esc(x.sale)}`,title:esc(x.name),sub:`${esc(x.sub)} · ${eur(x.price)}`,extra:silkBig(S.silk,64),dur:3800,from:[1.03,0,0],to:[1.13,-2,0]}));
   shots.push({img:'u98',kicker:'Direction l’écurie',title:'Bienvenue<br>à la maison.',dur:3600,from:[1.02,0,0],to:[1.1,0,-1]});
   cine(shots,done);
@@ -2195,7 +2219,7 @@ function openHorse(id){
     actions+=`<label class="f"><span>Tarif de saillie (€)</span><input type="number" id="sfee" step="500" value="${h.fee}"></label><p class="muted">Tarif conseillé : ${eur(nice(mkt(h)/55))}. Plus il est haut, moins d'éleveurs réservent.</p><button class="btn ghost" onclick="setFee(${h.id})">Fixer le tarif</button>`;
   }
   const sellBlock=h.forSale?`<p>Inscrit à la <b>${saleInfo(h.forSale.key).s.n}</b> (${fd(saleInfo(h.forSale.key).d)})${h.forSale.reserve?`, réserve ${eur(h.forSale.reserve)}`:''}.</p><button class="btn ghost" onclick="unconsign(${h.id})">Retirer de la vente</button>`:
-    `${upcoming.length?`<label class="f"><span>Inscrire à une vente Arqana</span><select id="sk">${upcoming.map(x=>`<option value="${x.key}">${x.s.n} · ${fd(x.d,{year:'numeric'})}</option>`).join('')}</select></label><label class="f"><span>Prix de réserve (€, facultatif)</span><input type="number" id="rsv" step="1000" placeholder="0"></label><button class="btn ghost" onclick="consign(${h.id})">Inscrire (commission 5 %, frais 800 €)</button>`:'<p class="muted">Aucune vente adaptée dans les prochains mois.</p>'}
+    `${upcoming.length?`<label class="f"><span>Inscrire à une vente</span><select id="sk">${upcoming.map(x=>`<option value="${x.key}">${x.s.n} · ${fd(x.d,{year:'numeric'})}</option>`).join('')}</select></label><label class="f"><span>Prix de réserve (€, facultatif)</span><input type="number" id="rsv" step="1000" placeholder="0"></label><button class="btn ghost" onclick="consign(${h.id})">Inscrire (commission 5 %, frais 800 €)</button>`:'<p class="muted">Aucune vente adaptée dans les prochains mois.</p>'}
      <button class="btn ghost" onclick="privateSale(${h.id})">Vente à l'amiable immédiate</button>`;
   const perfs=h.perfs.length?`<div class="tbl"><table><tr><th>Date</th><th>Course</th><th>Pl.</th></tr>${h.perfs.slice(0,15).map(p=>`<tr><td class="r">${fd(p.d,{day:'numeric',month:'short',year:'2-digit'})}</td><td>${esc(p.n)}<br><small class="muted">${p.t} · ${discLab[p.disc]} ${p.dist} m · ${p.going}${p.jk?' · '+esc(p.jk):''}</small></td><td class="n ${p.pos===1?'pos':''}">${p.pos==='T'?'T':p.pos+'/'+p.of}</td></tr>${p.com&&p===h.perfs[0]?`<tr><td></td><td colspan="2" class="small quote">${esc(p.com)}</td></tr>`:''}`).join('')}</table></div>`:`<p class="muted">${h.simulated?'Historique simulé avant achat : '+h.runs+' courses, '+h.wins+' victoires.':'Inédit.'}</p>`;
   openSheet(`<div class="portrait">${horsePhoto(Object.assign(horseLook(h),{foal:ageAt(h)<=1,rug:h.status==='training'?S.silk:null}),{w:340,seed:h.id})}<div class="pt-name">${silkSVG(S.silk,34)}<div><h2>${esc(disp(h))}</h2><p>${ageTxt(h)} · ${sexTxt(h)} ${coatTxt(h)} · ${STATUS[h.status]||''}</p></div></div></div>
@@ -2333,7 +2357,7 @@ function toggleWish(key,no){S.wish=S.wish||[];const k=wishKey(key,no);S.wish=inW
 function wishText(key){
   const si=saleInfo(key);const L=(S.wish||[]).filter(k=>k.startsWith(key+'#')).map(k=>S.lots[key]&&S.lots[key].find(l=>l.no===+k.split('#')[1])).filter(l=>l&&l.status!=='mine');
   if(!L.length)return '';
-  return `J'achète à la ${si.s.n} Arqana ${si.y} :\n`+L.map(l=>`- lot ${lot3(l.no)}${l.h.name?' '+l.h.name:''} (${l.h.sire} × ${l.h.dam})`).join('\n');
+  return `J'achète à la ${si.s.n} ${si.s.h} ${si.y} :\n`+L.map(l=>`- lot ${lot3(l.no)}${l.h.name?' '+l.h.name:''} (${l.h.sire} × ${l.h.dam})`).join('\n');
 }
 function copyWish(key){
   const t=wishText(key);const done=()=>alertMsg('Demande copiée : colle-la dans la conversation.');
@@ -2343,13 +2367,15 @@ function showWishText(key){openSheet(`<h2>Ta demande</h2><p class="muted">Sélec
 function viewSales(){
   if(U.sale)return viewCatalogue(U.sale);
   const list=salesAround();
-  return `${tag('Arqana')}<h2>Calendrier des ventes</h2>
-  <a class="arqlink" href="https://www.arqana.com/catalogues_resultats.html" target="_blank" rel="noopener"><b>ARQANA</b><span>Catalogues, vidéos des lots et résultats en direct sur le site officiel</span><i>›</i></a>
+  const hf=U.house||'all';
+  return `${tag('Arqana · Tattersalls · Goffs')}<h2>Calendrier des ventes</h2>
+  <div class="opts filter">${[['all','Toutes'],['Arqana','Arqana'],['Tattersalls','Tattersalls'],['Goffs','Goffs']].map(([k,n])=>`<button class="opt" aria-pressed="${hf===k}" onclick="U.house='${k}';renderMain()">${n}</button>`).join('')}</div>
+  ${Object.keys(HOUSES).filter(k=>hf==='all'||hf===k).map(k=>`<a class="arqlink" href="${HOUSES[k].url}" target="_blank" rel="noopener"><b>${k.toUpperCase()}</b><span>${HOUSES[k].lab} · catalogues et résultats sur le site officiel</span><i>›</i></a>`).join('')}
   <div class="panel"><span class="lbl" style="color:var(--gold)">Comment acheter</span>
   <p>Ventes réelles (Autumn Sale et Vente d'Élevage 2026) : ajoute les lots qui te plaisent à <b>ta liste</b>. Quand tu en achètes un, ouvre la vente et utilise <b>« Déclarer un achat »</b> : numéro du lot et prix d'adjudication. Tu paies ce prix <b>+ 1 000 €</b>. Tu peux aussi toujours me le dire dans la conversation.</p>
-  <p class="muted">Ventes simulées (à partir de 2027) : la semaine de la vente, tu achètes directement au prix d'adjudication simulé + 1 000 €.</p>
+  <p class="muted">Ventes simulées (Arqana à partir de 2027, Tattersalls et Goffs) : la semaine de la vente, tu achètes directement au prix d'adjudication simulé + 1 000 €. Tu achètes pour de vrai chez Tattersalls ou Goffs ? Dis-le-moi dans la conversation et je l'ajoute.</p>
   <p class="small muted">Achats notés par Claude dans cette version du jeu : ${REAL.docs.length}.</p></div>
-  ${list.map(x=>{const live=thisWeekSale(x.key);const n=Math.round((x.d-now())/(7*DAY));const w=(S.wish||[]).filter(k=>k.startsWith(x.key+'#')).length;return `<button class="card salecard ${live?'live':''}" onclick="U.sale='${x.key}';go(renderMain)"><div><span class="lbl">${live?'En cours cette semaine':n<=0?'Cette semaine':'Dans '+n+' semaine'+(n>1?'s':'')}</span><b>${x.s.n} ${x.y}</b><span class="muted">${fdl(x.d)} · ${x.s.t}${isReal(x.key)?' · catalogue réel':' · catalogue simulé'}${w?` · ${w} dans ta liste`:''}</span></div><span class="go">›</span></button>`}).join('')}
+  ${list.filter(x=>hf==='all'||x.s.h===hf).map(x=>{const live=thisWeekSale(x.key);const n=Math.round((x.d-now())/(7*DAY));const w=(S.wish||[]).filter(k=>k.startsWith(x.key+'#')).length;return `<button class="card salecard ${live?'live':''}" onclick="U.sale='${x.key}';go(renderMain)"><div><span class="lbl">${live?'En cours cette semaine':n<=0?'Cette semaine':'Dans '+n+' semaine'+(n>1?'s':'')}</span><b>${x.s.n} ${x.y}</b><span class="muted"><span class="house h-${x.s.h.toLowerCase()}">${x.s.h}</span> ${fdl(x.d)} · ${x.s.t}${isReal(x.key)?' · catalogue réel':' · catalogue simulé'}${w?` · ${w} dans ta liste`:''}</span></div><span class="go">›</span></button>`}).join('')}
   ${(S.ads||[]).length?`<span class="lbl">Annonces · à vendre à l'amiable cette semaine</span><div class="grid">${S.ads.map((ad,i)=>`<button class="card hcard" onclick="openAd(${i})"><div class="hc-top"><div class="pt">${horsePhoto(Object.assign(horseLook(ad.h),{}),{w:120,seed:i+S.week})}</div><div><b>${esc(ad.h.name)}</b><span class="muted">${ageAt(ad.h)} ans · ${ad.h.sex==='F'?'femelle':ad.h.sex==='H'?'hongre':'mâle'} · par ${esc(ad.h.sire)}</span><span class="muted small">${ad.h.ORj?'Obstacle · valeur '+kg(ad.h.ORj):ad.h.OR?'Plat · valeur '+kg(ad.h.OR):'Inédit'}</span></div></div><div class="hc-bot"><div class="mini"><span>Prix</span><b>${keur(ad.price)}</b></div></div></button>`).join('')}</div>`:''}
   ${S.horses.filter(h=>h.forSale).length?`<div class="panel"><span class="lbl">Tes chevaux inscrits</span>${S.horses.filter(h=>h.forSale).map(h=>`<p>${esc(disp(h))} · ${saleInfo(h.forSale.key).s.n}</p>`).join('')}</div>`:''}`;
 }
@@ -2368,7 +2394,7 @@ function viewCatalogue(key){
   const D=U.lday||'all';let L=lots.filter(l=>(D==='all'||l.day===D)&&(F==='all'||(F==='wish'?inWish(key,l.no):l.kind===F))&&(!U.lsearch||(lot3(l.no)+' '+lotTitle(l)+' '+l.h.sire+' '+l.h.dam+' '+(l.h.preg?l.h.preg.sire:'')+' '+l.cons).toLowerCase().includes(U.lsearch.toLowerCase())));L=L.slice().sort((a,b)=>a.no-b.no);
   const wt=real?wishText(key):'';
   return `<button class="link back" onclick="U.sale=null;go(renderMain)">‹ Toutes les ventes</button>
-  ${tag(live?'Vente en cours':'Catalogue')}<h2>${si.s.n} ${si.y}</h2>
+  ${tag((live?'Vente en cours':'Catalogue')+' · '+si.s.h)}<h2>${si.s.n} ${si.y}</h2>${!real?`<a class="arqlink sm" href="${HOUSES[si.s.h].url}" target="_blank" rel="noopener"><b>${si.s.h.toUpperCase()}</b><span>Le vrai catalogue de cette vente sur le site officiel</span><i>›</i></a>`:''}${si.s.h==='Tattersalls'?'<p class="small muted">Prix affichés en euros. Tattersalls vend en guinées (1 guinée = 1,05 £).</p>':''}
   ${real?`<a class="arqlink sm" href="${ARQ_URL[key]||'https://www.arqana.com/catalogues_resultats.html'}" target="_blank" rel="noopener"><b>ARQANA</b><span>Ce catalogue sur arqana.com : pedigrees complets, vidéos et prix d'adjudication</span><i>›</i></a>`:''}<p class="muted">${fdl(si.d)} · ${si.s.t} · ${lots.length} lots${real?` · lots, pedigrees et vendeurs réels${key==='elevage-2026'?' (lots 1 à 200 et 314 à 808)':' (catalogue complet : lots 1 à 846, hors absents et wild cards)'} ; âges, aptitudes et estimations simulés`:' · catalogue simulé'}</p>
   ${real?`<div class="panel decl"><span class="lbl" style="color:var(--gold)">Déclarer un achat</span>
     <p class="small">Tu viens d'acheter un lot à Deauville ? Entre son numéro et le prix d'adjudication : il arrive tout de suite dans ton écurie (prix + 1 000 €).</p>
@@ -2469,7 +2495,7 @@ function applyReal(){
     const nh=buyLot(l,`Achat · lot ${lot3(d.lot)} · ${saleInfo(key).s.n} (adjugé ${eur(d.prixReel)} + 1 000 €)`);
     if(nh.status==='repos'&&d.entraineur&&T(d.entraineur)){nh.trainer=d.entraineur;nh.status='training'}nh.irl={key,lot:+d.lot,prix:d.prixReel};
     S.wish=(S.wish||[]).filter(k=>k!==wishKey(key,+d.lot));
-    S.applied.push(d._id);n++;bought.push({no:+d.lot,kind:l.kind,sale:saleInfo(key).s.n,name:nh.name||`${nh.sire} × ${nh.dam}`,sub:`${KINDLAB[l.kind]||''} · par ${nh.sire}`,price:paid});
+    S.applied.push(d._id);n++;bought.push({no:+d.lot,kind:l.kind,sale:saleInfo(key).s.n,house:saleInfo(key).s.h+' · '+saleInfo(key).s.t,name:nh.name||`${nh.sire} × ${nh.dam}`,sub:`${KINDLAB[l.kind]||''} · par ${nh.sire}`,price:paid});
   });
   if(n){save();if(U.screen==='main')renderMain();if(U.noPurchaseCine)U.pendingBuy=bought;else setTimeout(()=>cinePurchase(bought),400)}
 }
