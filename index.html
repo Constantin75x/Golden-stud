@@ -420,6 +420,13 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .cty-ie{background:#1f8a4c;color:#fff;box-shadow:inset -4px 0 #e98a2c}
 .race .cn{display:inline-block;min-width:26px;color:var(--ink-2);font-size:.78rem;font-variant-numeric:tabular-nums}
 .race.mine{background:rgba(245,197,66,.08)}
+/* Mon équipe */
+.team-firsts{grid-template-columns:1fr 1fr}
+.team-first{cursor:default;gap:6px}
+.team-first .btn{margin-top:4px;padding:8px 10px;font-size:.85rem}
+@media (max-width:420px){.team-firsts{grid-template-columns:1fr}}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--gold)}
 </style>
 </head><body>
 <div id="app"></div>
@@ -972,7 +979,7 @@ function ensureField(r){
   if(r.field)return r.field;
   const ry=yearOf(new Date(r.date));const nO=isJ(r)?8+rint(7):7+rint(8)-(r.c==='G1'?2:0);
   const names=new Set(S.horses.map(h=>h.name));const sires=Object.keys(SIRE).filter(k=>isJ(r)?sireJ(k)>=.5:sireJ(k)<.55);
-  const jpool=jkPool(r);const F=[];const X=(r.cty||'FR')!=='FR';
+  const jpool=jkPool(r).filter(j=>!(S.firstJk&&(S.firstJk.P===j.id||S.firstJk.O===j.id)));const F=[];const X=(r.cty||'FR')!=='FR';
   const cr=(r.c[0]==='G'||r.feat)?shuffle(probables(r,true)).slice(0,r.c==='G1'?3:r.c==='G2'?2:1):[];
   cr.forEach(c=>{names.add(c.n);const age=ry-c.born;const v=c.v-(isJ(r)?(age>=10?(age-9)*2:0):(age>=6?(age-5)*2:age===3&&new Date(r.date).getUTCMonth()<6?3:0));
     const jk=JOCKEYS.find(j=>j.n===c.j);const taken=F.some(f=>f.jk===c.j);const alt=jpool.filter(q=>!F.some(f=>f.jk===q.n));
@@ -1122,7 +1129,7 @@ function advanceWeek(){
   pruneLots();
   S.races.forEach(r=>{if(S.entries.some(e=>e.rid===r.id)){const res=runRace(r);applyResult(res);results.push(res)}});
   resolveSales();
-  let pens=0;S.horses.forEach(h=>pens+=weekCost(h));if(pens)addLog('Pensions de la semaine (entraînement, haras)',-pens,'pension');
+  let pens=0;S.horses.forEach(h=>pens+=weekCost(h));if(pens)addLog('Pensions de la semaine (entraînement, haras)',-pens,'pension');{const rw=retainWeek();if(rw)addLog('Contrats de premier jockey',-rw,'courses')}
   const mon=now(),sun=sunday();
   S.horses.slice().forEach(h=>{
     const age=ageAt(h);
@@ -1960,7 +1967,7 @@ function save(){try{localStorage.setItem(SAVE,JSON.stringify(S));U.saveErr=false
 function load(){try{return JSON.parse(localStorage.getItem(SAVE))}catch(e){return null}}
 const tag=(t,dark)=>`<span class="tag ${dark?'dark':''}"><span>${t}</span></span>`;
 const stars=x=>{const n=clamp(Math.round(x*5),1,5);return '<span class="stars" aria-label="'+n+' sur 5">'+'★'.repeat(n)+'<i>'+'★'.repeat(5-n)+'</i></span>'};
-const jkFree=(j,r)=>{if(ensureField(r).some(f=>f.jk===j.n))return false;let x=7;(j.id+'|'+r.n+'|'+S.week).split('').forEach(c=>x=(x*31+c.charCodeAt(0))%99991);return x/99991<1-j.skill*.55};
+const jkFree=(j,r)=>{if(ensureField(r).some(f=>f.jk===j.n))return false;if(isRetained(j.id))return true;let x=7;(j.id+'|'+r.n+'|'+S.week).split('').forEach(c=>x=(x*31+c.charCodeAt(0))%99991);return x/99991<1-j.skill*.55};
 const pill=r=>`<span class="pill ${r.c[0]==='G'?'g':r.c==='L'?'l':''}">${r.c[0]==='G'?'Gr.'+r.c[1]:RL(r)}</span>`;
 const ageTxt=h=>{const a=ageAt(h);return a<=0?'foal':a===1?'yearling':a+' ans'};
 function marksTxt(h){const m=ensureMarks(h);const f=['',' · étoile',' · liste',' · belle face'][m.face];const s=m.socks?` · ${m.socks===1?'une balzane':m.socks+' balzanes'}`:'';return f+s}
@@ -2067,10 +2074,12 @@ function horseCard(h){
   const val=h.status==='training'?`<div class="mini"><span>Plat</span><b>${kg(h.OR)}</b></div><div class="mini"><span>Obst.</span><b>${kg(h.ORj)}</b></div><div class="mini"><span>Forme</span><b>${Math.round(h.fit)}</b></div>`:`<div class="mini"><span>Valeur</span><b>${keur(mkt(h))}</b></div>`;
   return `<button class="card hcard" onclick="openHorse(${h.id})"><div class="hc-top"><div class="pt">${horsePhoto(Object.assign(horseLook(h),{foal:ageAt(h)<=1,rug:h.status==='training'?S.silk:null}),{w:120,seed:h.id})}</div><div><b>${esc(disp(h))}</b><span class="muted">${ageTxt(h)} · ${sexTxt(h)} · par ${esc(h.sire)}${tr&&h.status==='training'?' · '+tr.n:''}</span></div></div><div class="hc-bot">${val}<div class="tags">${tags.join('')}</div></div></button>`;
 }
-function viewStable(){
+function jkFor(rid){const r=S.races[rid];const h=H(+$('#eh').value);const p=prefJk(h,r);if(p)$('#ej').value=p}
+function stableTabs(){return `<div class="opts filter seg">${[['horses','Mes chevaux'],['team','Mon équipe']].map(([k,n])=>`<button class="opt" aria-pressed="${(U.stv||'horses')===k}" onclick="U.stv='${k}';renderMain()">${n}</button>`).join('')}</div>`}
+function viewStable(){if(U.stv==='team')return `${tag('Écurie')}<h2>Mon équipe</h2>${stableTabs()}${viewTeam()}`;
   const grp=[['training','À l\'entraînement'],['repos','Au repos'],['haras','Jeunes au haras'],['broodmare','Poulinières'],['stallion','Étalons']];
-  if(!S.horses.length)return `${tag('Écurie')}<h2>Aucun cheval</h2><div class="panel"><p>Ton écurie est vide. Les catalogues Arqana t'attendent.</p><button class="btn" onclick="U.tab='sales';go(renderMain)">Voir les ventes</button></div>`;
-  return `${tag('Écurie')}<h2>${S.horses.length} cheva${S.horses.length>1?'ux':'l'}</h2>`+grp.map(([k,n])=>{const l=S.horses.filter(h=>h.status===k);return l.length?`<span class="lbl">${n} · ${l.length}</span><div class="grid">${l.map(horseCard).join('')}</div>`:''}).join('')+
+  if(!S.horses.length)return `${tag('Écurie')}<h2>Aucun cheval</h2>${stableTabs()}<div class="panel"><p>Ton écurie est vide. Les catalogues Arqana t'attendent.</p><button class="btn" onclick="U.tab='sales';go(renderMain)">Voir les ventes</button></div>`;
+  return `${tag('Écurie')}<h2>${S.horses.length} cheva${S.horses.length>1?'ux':'l'}</h2>${stableTabs()}`+grp.map(([k,n])=>{const l=S.horses.filter(h=>h.status===k);return l.length?`<span class="lbl">${n} · ${l.length}</span><div class="grid">${l.map(horseCard).join('')}</div>`:''}).join('')+
   (S.past.length?`<details class="panel"><summary class="lbl">Anciens chevaux · ${S.past.length}</summary>${S.past.slice(0,30).map(p=>`<p class="muted">${esc(p.name)} · ${esc(p.why)} · ${fd(p.d,{month:'short',year:'numeric'})}</p>`).join('')}</details>`:'');
 }
 
@@ -2202,14 +2211,14 @@ function condTxt(r){const a={'2':'2 ans','3':'3 ans','4':'4 ans','2+':'2 ans et 
 function openRace(rid){setTimeout(()=>progUpd(rid),0);
   const r=S.races[rid];
   const elig=S.horses.filter(h=>h.status==='training').map(h=>({h,why:eligible(h,r)}));
-  const ok=elig.filter(x=>!x.why);
+  const ok=elig.filter(x=>!x.why);const pj=ok.length?prefJk(ok[0].h,r):null;
   const jks=jkChoice(r);
   openSheet(`${tag(`${fdl(r.date)}`)}<h2>${esc(r.n)}</h2>
   <p>${flag(r.cty)} ${pill(r)} <b>${r.t}</b>${r.tm?' · '+(r.cty==='FR'&&r.reu?'R'+r.reu+'C'+r.rn+' · ':'')+hm(r.tm):''} · ${discLab[r.disc]} · ${distTxt(r)} · ${r.surf==='PSF'?'Piste en sable fibré':'Terrain '+r.going.toLowerCase()}</p>
   <div class="panel"><dl class="kv"><dt>Conditions</dt><dd>${condTxt(r)}</dd><dt>Allocations</dt><dd>${eur(r.tot)}${gbp(r)}</dd><dt>Au gagnant</dt><dd>${eur(r.tot*SHARE[0])}</dd><dt>${(r.cty||'FR')!=='FR'?'Engagement et transport':'Engagement'}</dt><dd>${eur(r.fee)}</dd>${r.hold?`<dt>Tenant du titre</dt><dd>${esc(r.hold)}</dd>`:''}<dt>Niveau attendu</dt><dd>valeur ≈ ${kg(r.lvl)}</dd></dl></div>
   ${(()=>{const o=winOdds(r).sort((a,b)=>b.p-a.p);const F=ensureField(r);return `<div class="panel"><span class="lbl">Partants annoncés · ${F.length} adversaires</span>${o.slice(0,8).map((x,k)=>{const f=F.find(y=>y.name===x.k);return `<p class="rowp"><span>${k+1}. <b>${esc(f.name)}</b>${f.real?' <span class="pill l">réel</span>':''}<small class="muted"> · ${esc(f.jk)}${f.real&&f.real.note?' · '+esc(f.real.note):''}</small></span><b>${cote(x.p)}</b></p>`}).join('')}${o.length>8?`<p class="small muted">et ${o.length-8} autres partants plus loin dans les cotes.</p>`:''}<p class="small muted">Cotes calculées sur 500 courses simulées, sans tes chevaux.</p></div>`})()}
-  ${ok.length?`<div class="panel"><label class="f"><span>Cheval</span><select id="eh" onchange="progUpd(${r.id})">${ok.map(x=>{return `<option value="${x.h.id}">${esc(x.h.name)}</option>`}).join('')}</select></label>
-  <label class="f"><span>Jockey</span><select id="ej" onchange="progUpd(${r.id})">${jks.map(j=>{const free=jkFree(j,r);return `<option value="${j.id}" ${free?'':'disabled'}>${j.n} · ${jkTag(j)} · ${free?eur(j.fee)+' la monte':'déjà en selle'}</option>`}).join('')}</select></label>
+  ${ok.length?`<div class="panel"><label class="f"><span>Cheval</span><select id="eh" onchange="jkFor(${r.id});progUpd(${r.id})">${ok.map(x=>{return `<option value="${x.h.id}">${esc(x.h.name)}</option>`}).join('')}</select></label>
+  <label class="f"><span>Jockey</span><select id="ej" onchange="progUpd(${r.id})">${jks.map(j=>{const free=jkFree(j,r);return `<option value="${j.id}" ${free?'':'disabled'} ${pj===j.id?'selected':''}>${j.n}${isRetained(j.id)?' (1er jockey)':''} · ${jkTag(j)} · ${free?eur(j.fee)+' la monte':'déjà en selle'}</option>`}).join('')}</select></label>
   <label class="f"><span>Consigne au jockey</span><select id="et" onchange="progUpd(${r.id})">${Object.entries(TACTICS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
   <label class="chk"><input type="checkbox" id="eb" onchange="progUpd(${r.id})"> Mettre des œillères</label>
   <div class="infos" id="einfo"></div>
@@ -2586,6 +2595,58 @@ function openMenu(){openSheet(`<h2>Menu</h2><div class="sh-head">${silkSVG(S.sil
 /* ---------- Démarrage ---------- */
 REAL.docs=ACHATS.map(d=>Object.assign({_id:d.id||(d.vente+'-'+d.lot)},d));REAL.ready=true;REAL.state='ok';
 render();
+
+/* ===================== MON ÉQUIPE : entraîneurs et jockeys =====================
+   Premier jockey (contrat à l'année, payé chaque semaine) en plat et en obstacle,
+   jockey attitré par cheval, et choix des entraîneurs depuis une seule page. */
+const tStars=s=>'★'.repeat(clamp(Math.round(s*5),1,5))+'<span class="muted">'+'★'.repeat(5-clamp(Math.round(s*5),1,5))+'</span>';
+const retainFee=j=>Math.round((1500+j.skill*7500)/100)*100; // par mois
+const firstJk=()=>S.firstJk||(S.firstJk={P:null,O:null});
+const isRetained=id=>{const f=firstJk();return f.P===id||f.O===id};
+const retainWeek=()=>{const f=firstJk();let c=0;['P','O'].forEach(k=>{const j=f[k]&&J(f[k]);if(j)c+=retainFee(j)*12/52});return Math.round(c)};
+/* Le jockey choisi par défaut pour un cheval dans une course : son jockey attitré, sinon le premier jockey de l'écurie */
+function prefJk(h,r){const L=jkChoice(r);const ok=id=>id&&L.some(j=>j.id===id)&&jkFree(J(id),r)&&!S.entries.some(e=>e.rid===r.id&&e.jk===id);
+  if(h&&ok(h.jk))return h.jk;const f=firstJk()[isJ(r)?'O':'P'];if(ok(f))return f;return null}
+
+function viewTeam(){
+  const f=firstJk(),dk=U.tmd||'P',ck=U.tmc||'FR';
+  const fj=k=>{const j=f[k]&&J(f[k]);return `<div class="card team-first"><span class="lbl">Premier jockey · ${k==='P'?'plat':'obstacle'}</span>${j?`<b>${esc(j.n)}</b><span class="small">${tStars(j.skill)} · ${eur(retainFee(j))}/mois</span><span class="small muted">Il monte tes chevaux en priorité et reste toujours disponible pour toi.</span><button class="btn ghost" onclick="dropFirst('${k}')">Mettre fin au contrat</button>`:`<span class="muted small">Aucun. Choisis-en un dans la liste ci-dessous : il sera toujours libre pour tes chevaux.</span>`}</div>`};
+  const mine=id=>S.horses.filter(h=>h.trainer===id&&h.status==='training').length;
+  const JL=JOCKEYS.filter(j=>j.d===dk&&j.c===ck).sort((a,b)=>b.skill-a.skill);
+  const tr=TRAINERS.filter(t=>t.d.includes(dk)).sort((a,b)=>mine(b.id)-mine(a.id)||b.skill-a.skill);
+  return `<div class="opts filter">${[['P','Plat'],['O','Obstacle']].map(([k,n])=>`<button class="opt" aria-pressed="${dk===k}" onclick="U.tmd='${k}';renderMain()">${n}</button>`).join('')}</div>
+  <div class="grid team-firsts">${fj('P')}${fj('O')}</div>
+  ${retainWeek()?`<p class="small muted">Contrats de premier jockey : ${eur(retainWeek()*52/12)} par mois, prélevés chaque semaine.</p>`:''}
+  <span class="lbl">Jockeys · ${dk==='P'?'plat':'obstacle'}</span>
+  <div class="opts filter">${[['FR','France'],['GB','Royaume-Uni'],['IE','Irlande']].map(([k,n])=>`<button class="opt" aria-pressed="${ck===k}" onclick="U.tmc='${k}';renderMain()">${n}</button>`).join('')}</div>
+  <div class="panel tight">${JL.map(j=>{const att=S.horses.filter(h=>h.jk===j.id);return `<button class="race" onclick="openJockey('${j.id}')"><div class="nm">${esc(j.n)}${isRetained(j.id)?' <span class="pill l">1er jockey</span>':''}</div><div class="meta">${tStars(j.skill)}${j.c==='FR'?' · '+j.w+' victoires en 2026':''}${att.length?' · monte '+att.map(h=>esc(h.name)).join(', '):''}</div><div class="pz">${eur(j.fee)}<small class="muted"> /monte</small></div></button>`}).join('')}</div>
+  <span class="lbl">Entraîneurs · ${dk==='P'?'plat':'obstacle'}</span>
+  <div class="panel tight">${tr.map(t=>`<button class="race" onclick="openTrainer('${t.id}')"><div class="nm">${esc(t.n)}${mine(t.id)?` <span class="pill l">${mine(t.id)} cheva${mine(t.id)>1?'ux':'l'}</span>`:''}</div><div class="meta">${tStars(t.skill)}${t.d==='PO'?' · plat et obstacle':''}</div><div class="pz">${eur(t.fee)}<small class="muted"> /mois</small></div></button>`).join('')}</div>`;
+}
+const myRunners=()=>S.horses.filter(h=>h.name&&(h.status==='training'||h.status==='repos'||(h.status==='haras'&&ageAt(h)>=1)));
+function openJockey(id){const j=J(id);const k=j.d;const f=firstJk();
+  const hs=myRunners().filter(h=>h.status==='training');
+  openSheet(`${tag(k==='P'?'Jockey de plat':'Jockey d\'obstacle')}<h2>${esc(j.n)}</h2>
+   <div class="kpis"><div><span>Niveau</span><b>${tStars(j.skill)}</b></div><div><span>${j.c==='FR'?'Victoires 2026':'Pays'}</span><b>${j.c==='FR'?j.w:CTY[j.c].n}</b></div><div><span>La monte</span><b>${eur(j.fee)}</b></div></div>
+   <div class="panel"><span class="lbl" style="color:var(--gold)">Premier jockey ${k==='P'?'plat':'obstacle'}</span>
+    ${f[k]===id?`<p class="pos">C'est ton premier jockey. Contrat : ${eur(retainFee(j))} par mois.</p><button class="btn ghost" onclick="dropFirst('${k}');closeSheet()">Mettre fin au contrat</button>`:
+    `<p class="small">Contrat à ${eur(retainFee(j))} par mois. Il est toujours disponible pour tes chevaux et il est choisi d'office quand tu engages un cheval qui n'a pas de jockey attitré.${f[k]?` Il remplacera ${esc(J(f[k]).n)}.`:''}</p><button class="btn" onclick="setFirst('${id}')">Signer comme premier jockey</button>`}</div>
+   <div class="panel"><span class="lbl">Jockey attitré d'un cheval</span>
+    ${hs.length?`<p class="small">Il sera proposé d'office pour ce cheval à chaque engagement, s'il est libre.</p>${hs.map(h=>`<label class="chk"><input type="checkbox" ${h.jk===id?'checked':''} onchange="setHorseJk(${h.id},this.checked?'${id}':null)"> ${esc(h.name)}${h.jk&&h.jk!==id?` <small class="muted">(aujourd'hui ${esc(J(h.jk)?J(h.jk).n:'')})</small>`:''}</label>`).join('')}`:'<p class="small muted">Aucun de tes chevaux n\'est à l\'entraînement pour l\'instant.</p>'}</div>
+   ${j.c!=='FR'?'<p class="small muted">Jockey basé au Royaume-Uni ou en Irlande : il monte aussi en France, mais il est surtout proposé pour les courses là-bas.</p>':''}`)}
+function setFirst(id){const j=J(id);firstJk()[j.d]=id;news(`${j.n} devient ton premier jockey ${j.d==='P'?'en plat':'en obstacle'}.`);save();closeSheet();renderMain();alertMsg(`${j.n} est ton premier jockey.`)}
+function dropFirst(k){const f=firstJk();const j=f[k]&&J(f[k]);f[k]=null;if(j)news(`Fin du contrat de ${j.n}.`);save();renderMain()}
+function setHorseJk(hid,id){const h=H(hid);h.jk=id||null;save();renderMain()}
+function openTrainer(id){const t=T(id);const hs=myRunners();
+  openSheet(`${tag('Entraîneur')}<h2>${esc(t.n)}</h2>
+   <div class="kpis"><div><span>Niveau</span><b>${tStars(t.skill)}</b></div><div><span>Spécialité</span><b>${t.d==='PO'?'Plat et obstacle':t.d==='P'?'Plat':'Obstacle'}</b></div><div><span>Pension</span><b>${eur(t.fee)}/mois</b></div></div>
+   ${t.w?`<p class="small muted">${t.w} victoires en 2026${t.r?' · '+String(t.r).replace('.',',')+' % de réussite':''}.</p>`:''}
+   <div class="panel"><span class="lbl">Lui confier un cheval</span>
+   ${hs.length?hs.map(h=>`<div class="hl"><div><b>${esc(h.name)}</b><br><span class="muted small">${h.trainer?(h.trainer===id?'déjà chez lui':'chez '+esc(T(h.trainer).n)):'pas d\'entraîneur'}</span></div>${h.trainer===id&&h.status==='training'?'<span class="pos small">✓</span>':`<button class="btn ghost" onclick="giveTrainer(${h.id},'${id}')">Confier</button>`}</div>`).join(''):'<p class="small muted">Aucun cheval à confier : il faut un cheval baptisé d\'au moins un an.</p>'}</div>
+   <p class="small muted">Changer d'entraîneur fait perdre un peu de condition au cheval pendant qu'il s'adapte.</p>`)}
+function giveTrainer(hid,tid){const h=H(hid);if(!h.name){alertMsg('Baptise ton cheval d\'abord.');return}
+  const was=h.trainer;h.trainer=tid;h.status='training';if(was&&was!==tid){h.fit=Math.max(40,h.fit-15);const nt=T(tid);if(!nt.d.includes('O'))h.school=Math.min(h.school,h.school>=4?4:0)}
+  news(`${disp(h)} rejoint l'écurie de ${T(tid).n}.`);save();openTrainer(tid);renderMain()}
 
 </script>
 
