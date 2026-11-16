@@ -427,6 +427,17 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 @media (max-width:420px){.team-firsts{grid-template-columns:1fr}}
 .chk{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
 .chk input{width:20px;height:20px;accent-color:var(--gold)}
+/* Suivi en vrai */
+.irl-card{display:flex!important;flex-direction:row!important;grid-template-columns:none;gap:12px;align-items:center;text-align:left;width:100%;margin-bottom:10px}
+.irl-card .pt{flex:none;width:84px;height:84px;border-radius:10px;overflow:hidden}
+.irl-card .pt .photo{width:100%;height:100%}
+.irl-tx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.irl-links{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.irl-links .btn{width:auto;flex:1 1 45%;margin:0;padding:10px 8px;font-size:.85rem;text-align:center}
+.irl-news{position:relative;padding:10px 30px 10px 0;border-top:1px solid var(--line)}
+.irl-news p{margin:4px 0 0}
+.irl-news .x{position:absolute;right:0;top:8px}
+#sheet textarea{width:100%;box-sizing:border-box;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;margin:6px 0}
 </style>
 </head><body>
 <div id="app"></div>
@@ -442,6 +453,11 @@ const AUT_LOTS=[[1, "H", "T", "Inmate", "Waldpfad", "Intimhir", "Bellemère"], [
    T cheval à l'entraînement, O obstacle, Y yearling), nom, sexe (M, F, H), pere, mere,
    pleineDe, age, vendeur, prixReel, acheteurReel, entraineur (id facultatif). */
 const ACHATS=[
+];
+
+/* ===================== SUIVI EN VRAI (noté par Claude) =====================
+   Vraies nouvelles des chevaux achetés : { lot:'autumn-2026-116' ou cheval:'Nom', date:'2026-11-20', texte:'…', lien:'https://…' } */
+const SUIVI=[
 ];
 
 /* ===================== VRAIS CRACKS (adversaires) =====================
@@ -2075,8 +2091,8 @@ function horseCard(h){
   return `<button class="card hcard" onclick="openHorse(${h.id})"><div class="hc-top"><div class="pt">${horsePhoto(Object.assign(horseLook(h),{foal:ageAt(h)<=1,rug:h.status==='training'?S.silk:null}),{w:120,seed:h.id})}</div><div><b>${esc(disp(h))}</b><span class="muted">${ageTxt(h)} · ${sexTxt(h)} · par ${esc(h.sire)}${tr&&h.status==='training'?' · '+tr.n:''}</span></div></div><div class="hc-bot">${val}<div class="tags">${tags.join('')}</div></div></button>`;
 }
 function jkFor(rid){const r=S.races[rid];const h=H(+$('#eh').value);const p=prefJk(h,r);if(p)$('#ej').value=p}
-function stableTabs(){return `<div class="opts filter seg">${[['horses','Mes chevaux'],['team','Mon équipe']].map(([k,n])=>`<button class="opt" aria-pressed="${(U.stv||'horses')===k}" onclick="U.stv='${k}';renderMain()">${n}</button>`).join('')}</div>`}
-function viewStable(){if(U.stv==='team')return `${tag('Écurie')}<h2>Mon équipe</h2>${stableTabs()}${viewTeam()}`;
+function stableTabs(){return `<div class="opts filter seg">${[['horses','Mes chevaux'],['irl','Suivi réel'],['team','Équipe']].map(([k,n])=>`<button class="opt" aria-pressed="${(U.stv||'horses')===k}" onclick="U.stv='${k}';renderMain()">${n}</button>`).join('')}</div>`}
+function viewStable(){if(U.stv==='irl')return `${tag('Écurie')}<h2>Suivi en vrai</h2>${stableTabs()}${viewSuivi()}`;if(U.stv==='team')return `${tag('Écurie')}<h2>Mon équipe</h2>${stableTabs()}${viewTeam()}`;
   const grp=[['training','À l\'entraînement'],['repos','Au repos'],['haras','Jeunes au haras'],['broodmare','Poulinières'],['stallion','Étalons']];
   if(!S.horses.length)return `${tag('Écurie')}<h2>Aucun cheval</h2>${stableTabs()}<div class="panel"><p>Ton écurie est vide. Les catalogues Arqana t'attendent.</p><button class="btn" onclick="U.tab='sales';go(renderMain)">Voir les ventes</button></div>`;
   return `${tag('Écurie')}<h2>${S.horses.length} cheva${S.horses.length>1?'ux':'l'}</h2>${stableTabs()}`+grp.map(([k,n])=>{const l=S.horses.filter(h=>h.status===k);return l.length?`<span class="lbl">${n} · ${l.length}</span><div class="grid">${l.map(horseCard).join('')}</div>`:''}).join('')+
@@ -2106,7 +2122,7 @@ function openHorse(id){
   if(h.broken===false)pref.push(['Débourrage',`${h.brk||0} semaines sur 6`]);
   const sk=sellKind(h);
   const upcoming=salesAround().filter(x=>x.s.sell.includes(sk)&&x.d>sunday()).slice(0,4);
-  let actions='';
+  let actions='';ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
   if(h.status==='training'||h.status==='repos'){
     actions+=`<label class="f"><span>Entraîneur</span>${trainerSelect(h,'trs')}</label><button class="btn ghost" onclick="setTrainer(${h.id})">${h.status==='repos'?'Remettre à l\'entraînement':'Changer d\'entraîneur'}</button>`;
     if(h.status==='training')actions+=`<button class="btn ghost" onclick="setStatus(${h.id},'repos')">Mettre au repos au haras</button>`;
@@ -2397,7 +2413,7 @@ function applyReal(){
     const paid=d.prixPaye||d.prixReel+PREMIUM;
     l.status='mine';l.price=paid;l.real={prixReel:d.prixReel,acheteurReel:d.acheteurReel||''};
     const nh=buyLot(l,`Achat · lot ${lot3(d.lot)} · ${saleInfo(key).s.n} (adjugé ${eur(d.prixReel)} + 1 000 €)`);
-    if(nh.status==='repos'&&d.entraineur&&T(d.entraineur)){nh.trainer=d.entraineur;nh.status='training'}
+    if(nh.status==='repos'&&d.entraineur&&T(d.entraineur)){nh.trainer=d.entraineur;nh.status='training'}nh.irl={key,lot:+d.lot,prix:d.prixReel};
     S.wish=(S.wish||[]).filter(k=>k!==wishKey(key,+d.lot));
     S.applied.push(d._id);n++;bought.push({no:+d.lot,kind:l.kind,sale:saleInfo(key).s.n,name:nh.name||`${nh.sire} × ${nh.dam}`,sub:`${KINDLAB[l.kind]||''} · par ${nh.sire}`,price:paid});
   });
@@ -2647,6 +2663,41 @@ function openTrainer(id){const t=T(id);const hs=myRunners();
 function giveTrainer(hid,tid){const h=H(hid);if(!h.name){alertMsg('Baptise ton cheval d\'abord.');return}
   const was=h.trainer;h.trainer=tid;h.status='training';if(was&&was!==tid){h.fit=Math.max(40,h.fit-15);const nt=T(tid);if(!nt.d.includes('O'))h.school=Math.min(h.school,h.school>=4?4:0)}
   news(`${disp(h)} rejoint l'écurie de ${T(tid).n}.`);save();openTrainer(tid);renderMain()}
+
+/* ===================== SUIVI EN VRAI =====================
+   Pour chaque cheval acheté pour de vrai à Arqana : liens vers ses fiches officielles,
+   nouvelles réelles notées par Claude (tableau SUIVI dans real.js) et carnet personnel. */
+function ensureIrl(){(S.horses||[]).forEach(h=>{if(h.irl||!h.origin||!/^Arqana .* lot /.test(h.origin))return;
+  const m=h.origin.match(/lot (\d+)/);const key=Object.keys(S.lots||{}).find(k=>(S.lots[k]||[]).some(l=>l.no===+m[1]&&l.status==='mine'&&l.real));
+  if(key){const l=S.lots[key].find(l=>l.no===+m[1]);h.irl={key,lot:l.no,prix:l.real.prixReel}}})}
+const realHorses=()=>{ensureIrl();return S.horses.filter(h=>h.irl)};
+const irlName=h=>h.name||`${h.sex==='F'?'Pouliche':h.sex==='H'?'Hongre':'Poulain'} par ${h.sire} et ${h.dam}`;
+const gq=(q,site)=>'https://www.google.com/search?q='+encodeURIComponent(q+(site?' site:'+site:''));
+function irlLinks(h){const q=h.name?`"${h.name}"`:`"${h.dam}" ${h.sire} ${h.born}`;
+  return [['France Galop',gq(q,'france-galop.com')],['Equidia',gq(q,'equidia.fr')],['IFCE (papiers, origines)',gq(q,'infochevaux.ifce.fr')],['Racing Post',gq(q,'racingpost.com')],['Arqana',gq(`"${h.dam}" ${h.sire}`,'arqana.com')]]}
+function irlNews(h){const lk=h.irl?h.irl.key+'-'+h.irl.lot:'';
+  const c=(typeof SUIVI!=='undefined'?SUIVI:[]).filter(s=>(s.lot&&s.lot===lk)||(s.cheval&&h.name&&s.cheval.toLowerCase()===h.name.toLowerCase())).map(s=>({d:new Date(s.date).getTime(),t:s.texte,src:'claude',url:s.lien}));
+  const m=(h.irlNotes||[]).map((n,i)=>({d:n.d,t:n.t,src:'moi',i}));
+  return [...c,...m].sort((a,b)=>b.d-a.d)}
+function viewSuivi(){const L=realHorses();
+  if(!L.length)return `<div class="panel"><p>Ici, tu suivras la vraie vie des chevaux que tu achètes pour de vrai : leurs fiches officielles, leurs courses et leurs résultats.</p><p class="small muted">Aucun achat réel pour l'instant. Quand tu achètes un lot à Arqana, déclare-le dans Ventes (« Déclarer un achat ») ou dis-le-moi dans la conversation : il apparaîtra ici.</p><button class="btn" onclick="U.tab='sales';go(renderMain)">Aller aux ventes</button></div>`;
+  return `<p class="small muted">Les chevaux que tu as achetés pour de vrai. Leurs vraies nouvelles, ce que tu notes toi-même et ce que je trouve quand tu me demandes de faire le point.</p>
+  ${L.map(h=>{const N=irlNews(h);const last=N[0];return `<button class="card irl-card" onclick="openIrl(${h.id})">${`<div class="pt">${horsePhoto(Object.assign(horseLook(h),{foal:ageAt(h)<=1}),{w:120,seed:h.id})}</div>`}<div class="irl-tx"><b>${esc(irlName(h))}</b><span class="small muted">Lot ${lot3(h.irl.lot)} · adjugé ${eur(h.irl.prix)}${h.irlTr?' · '+esc(h.irlTr):''}</span>${last?`<span class="small">${fd(last.d,{day:'numeric',month:'short'})} · ${esc(last.t.length>90?last.t.slice(0,88)+'…':last.t)}</span>`:'<span class="small muted">Pas encore de nouvelles.</span>'}</div></button>`}).join('')}`;
+}
+function openIrl(id){const h=H(id);if(!h||!h.irl)return;const N=irlNews(h);
+  openSheet(`${tag('Suivi en vrai')}<h2>${esc(irlName(h))}</h2>
+  <p class="small muted">${esc(h.sire)} × ${esc(h.dam)} · né${h.sex==='F'?'e':''} en ${h.born} · ${esc(h.origin||'')} · adjugé ${eur(h.irl.prix)}</p>
+  <div class="panel"><span class="lbl">Ses fiches officielles</span><div class="irl-links">${irlLinks(h).map(([n,u])=>`<a class="btn ghost" href="${u}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div>
+   <p class="small muted">${h.name?'':'Tant qu\'il n\'a pas de nom officiel, la recherche se fait avec sa mère et son père. '}Ouvre France Galop ou Equidia pour voir ses engagements et ses résultats officiels.</p></div>
+  <div class="panel"><span class="lbl">En vrai</span>
+   <label class="f"><span>Entraîneur</span><input type="text" id="irlTr" value="${esc(h.irlTr||'')}" placeholder="ex. F.-H. Graffard"></label>
+   <label class="f"><span>Prochain objectif</span><input type="text" id="irlGoal" value="${esc(h.irlGoal||'')}" placeholder="ex. débuts à Chantilly au printemps"></label>
+   <button class="btn ghost" onclick="saveIrl(${h.id})">Enregistrer</button></div>
+  <div class="panel"><span class="lbl">Ajouter une nouvelle</span><textarea id="irlNote" rows="3" placeholder="ex. 2e pour ses débuts à Deauville, bonne fin de course"></textarea><button class="btn" onclick="addIrlNote(${h.id})">Ajouter</button></div>
+  <div class="panel"><span class="lbl">Fil des nouvelles</span>${N.length?N.map(n=>`<div class="irl-news"><span class="small muted">${fd(n.d,{day:'numeric',month:'long',year:'numeric'})} · ${n.src==='claude'?'noté par Claude':'noté par toi'}</span><p>${esc(n.t)}${n.url?` <a href="${n.url}" target="_blank" rel="noopener">Source ↗</a>`:''}</p>${n.src==='moi'?`<button class="x" aria-label="Supprimer cette nouvelle" onclick="delIrlNote(${h.id},${n.i})">✕</button>`:''}</div>`).join(''):'<p class="small muted">Rien pour l\'instant. Ajoute ses nouvelles ici, ou demande-moi dans la conversation de faire le point sur lui : je chercherai ses vraies courses et je les ajouterai.</p>'}</div>`)}
+function saveIrl(id){const h=H(id);h.irlTr=$('#irlTr').value.trim();h.irlGoal=$('#irlGoal').value.trim();save();alertMsg('Enregistré.');renderMain()}
+function addIrlNote(id){const h=H(id);const t=$('#irlNote').value.trim();if(!t)return alertMsg('Écris la nouvelle d\'abord.');(h.irlNotes=h.irlNotes||[]).push({d:Date.now(),t});save();openIrl(id);renderMain()}
+function delIrlNote(id,i){const h=H(id);h.irlNotes.splice(i,1);save();openIrl(id);renderMain()}
 
 </script>
 
