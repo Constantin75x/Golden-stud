@@ -1266,6 +1266,9 @@ const gnSat=Y=>dowOnOrAfter(Y,3,5,6);
 const icsSat=Y=>nthDow(Y,8,6,2);
 const champDay=Y=>nthDow(Y,9,6,3);
 const fixD=(m,d)=>Y=>mkD(Y,m,d);
+/* Baden-Baden : meeting de printemps, Grosse Woche (fin août) et Sales & Racing Festival (octobre) */
+const bbSpring=Y=>dowOnOrAfter(Y,4,22,6),bbGW=Y=>dowOnOrAfter(Y,7,22,6),bbOct=Y=>dowOnOrAfter(Y,9,15,5);
+function bbOn(day){const Y=yearOf(day),t=day.getTime(),dow=day.getUTCDay();const inW=(a,n)=>t>=a.getTime()&&t<=addDays(a,n).getTime();return (inW(bbSpring(Y),8)||inW(bbGW(Y),8))&&dow!==1&&dow!==2||inW(bbOct(Y),2)}
 const bcSat=Y=>dowOnOrAfter(Y,9,29,6);const bcT=Y=>Y===2026?'Keeneland':'Del Mar';
 const G=1.15; // livre → euro
 FEATS.push(...[
@@ -1360,13 +1363,11 @@ FEATS.push(...[
  {n:'Moyglare Stud Stakes',t:'Curragh',cty:'IE',disc:'P',d:1400,c:'G1',age:'2',sex:'F',tot:500000,lvl:103,dt:Y=>addDays(icsSat(Y),1)},
  {n:'National Stakes',t:'Curragh',cty:'IE',disc:'P',d:1400,c:'G1',age:'2',tot:400000,lvl:105,dt:Y=>addDays(icsSat(Y),1)},
 
- // ---- Allemagne ----
- {n:'Deutsches Derby',t:'Hamburg',cty:'DE',disc:'P',d:2400,c:'G1',age:'3',tot:650000,lvl:112,dt:Y=>nthDow(Y,6,0,1)},
- {n:'Grosser Dallmayr-Preis',t:'München',cty:'DE',disc:'P',d:2000,c:'G1',age:'3+',tot:155000,lvl:113,dt:Y=>nthDow(Y,6,0,-1)},
- {n:'Grosser Preis von Berlin',t:'Hoppegarten',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:200000,lvl:114,dt:Y=>nthDow(Y,7,0,2)},
- {n:'Grosser Preis von Baden',t:'Baden-Baden',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:250000,lvl:116,dt:Y=>dowOnOrAfter(Y,8,1,0)},
- {n:'Preis von Europa',t:'Köln',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:155000,lvl:114,dt:Y=>nthDow(Y,8,0,4)},
- {n:'Grosser Preis von Bayern',t:'München',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:155000,lvl:113,dt:Y=>nthDow(Y,10,0,1)},
+ // ---- Allemagne : Baden-Baden ----
+ {n:'Grosser Preis der Badischen Wirtschaft',t:'Baden-Baden',cty:'DE',disc:'P',d:2200,c:'G2',age:'4+',tot:70000,lvl:108,dt:Y=>addDays(bbSpring(Y),1)},
+ {n:'Zukunfts-Rennen',t:'Baden-Baden',cty:'DE',disc:'P',d:1400,c:'G3',age:'2',tot:52000,lvl:98,dt:Y=>addDays(bbGW(Y),1)},
+ {n:'Goldene Peitsche',t:'Baden-Baden',cty:'DE',disc:'P',d:1200,c:'G2',age:'3+',tot:75000,lvl:106,dt:Y=>addDays(bbGW(Y),7)},
+ {n:'Grosser Preis von Baden',t:'Baden-Baden',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:250000,lvl:116,dt:Y=>addDays(bbGW(Y),8)},
  // ---- États-Unis ----
  {n:'Pegasus World Cup',t:'Gulfstream Park',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'4+',tot:3000000*0.87,lvl:118,dt:Y=>nthDow(Y,0,6,-1)},
  {n:'Florida Derby',t:'Gulfstream Park',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'3',tot:1000000*0.87,lvl:108,dt:Y=>nthDow(Y,2,6,-1)},
@@ -1435,9 +1436,6 @@ const TRK=[
  ['Down Royal','IE','O','10-3',.5],['Downpatrick','IE','O','10-4',.4],['Tramore','IE','O','10-4',.4],['Wexford','IE','O','10-4',.5],['Galway','IE','O','7-10',.5],
  ['Kilbeggan','IE','O','5-9',.5],['Ballinrobe','IE','O','5-9',.3],['Listowel','IE','O','9-9',.3],['Tipperary','IE','O','7-10',.4],['Bellewstown','IE','O','6-8',.3],
  ['Killarney','IE','O','5-8',.3],['Roscommon','IE','O','5-9',.3],['Sligo','IE','O','5-9',.3],
- // Allemagne
- ['Baden-Baden','DE','P','5-6',.6],['Baden-Baden','DE','P','8-10',.8],['Hamburg','DE','P','6-7',.6],['Köln','DE','P','3-11',1],['Düsseldorf','DE','P','4-10',.8],['München','DE','P','4-11',.8],
- ['Hoppegarten','DE','P','4-10',.8],['Hannover','DE','P','4-10',.6],['Dortmund','DE','P','4-10',.6],['Dortmund','DE','A','11-3',1.2],['Krefeld','DE','P','3-11',.6],['Mülheim','DE','P','4-10',.5],['Leipzig','DE','P','5-10',.4],
  // États-Unis (terre et gazon sur la même réunion)
  ['Saratoga','US','U','7-9',1.4],['Aqueduct','US','U','11-4',1],['Belmont Park','US','U','5-6',1],['Belmont Park','US','U','9-10',1],['Churchill Downs','US','U','4-6',1],['Churchill Downs','US','U','9-11',.9],
  ['Keeneland','US','U','4-4',1.2],['Keeneland','US','U','10-10',1.2],['Santa Anita','US','U','12-6',1.2],['Santa Anita','US','U','9-11',.8],['Del Mar','US','U','7-9',1.2],['Del Mar','US','U','11-11',.6],
@@ -1495,6 +1493,7 @@ function genJumpX(c,t,m){const big=BIG_X.includes(t);
 /* Combien de réunions par jour (0 = dimanche) */
 const MEETS={FR:[8,5,4,5,5,5,6],GB:[3,4,4,5,5,6,7],IE:[2,1,1,1,2,2,3],DE:[2,0,0,1,0,1,2],US:[4,1,0,3,4,4,5]};
 function planDay(c,day,mm,dow,fx,used){
+  if(c==='DE')return bbOn(day)||fx.length?[{t:'Baden-Baden',c,k:'P',prem:false,big:true,fx:fx.map(x=>x.f)}]:[];
   const m1=mm+1;const out=[];const today=new Set();
   const byT={};fx.forEach(x=>{(byT[x.f.t]=byT[x.f.t]||[]).push(x.f)});
   Object.keys(byT).forEach(t=>{const fs=byT[t];const k=fs[0].disc==='P'?'P':'O';const spec=TRK.find(x=>x.n===t&&x.c===c&&x.k===k)||{n:t,c,k,p:1};
