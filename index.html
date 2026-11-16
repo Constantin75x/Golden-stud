@@ -1990,7 +1990,7 @@ function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();save();
 /* ---------- Création ---------- */
 function renderSetup(){
   U.draft=U.draft||{stable:'Écurie de la Touques',cap:1000000,silk:{...PRESETS[0]}};const d=U.draft;
-  const caps=[[500000,'Petit propriétaire','Quelques foals et un cheval à l\'entraînement.'],[1000000,'Propriétaire','Deux ou trois chevaux et une poulinière.'],[2000000,'Écurie ambitieuse','Une belle jument pleine et plusieurs chevaux de bon niveau.'],[5000000,'Grand haras','Les lots les plus chers du catalogue sont à ta portée.']];
+  const caps=[[500000,'Petit propriétaire','Quelques foals et un cheval à l\'entraînement.'],[750000,'Propriétaire débutant','Un ou deux chevaux et quelques foals.'],[1000000,'Propriétaire','Deux ou trois chevaux et une poulinière.'],[2000000,'Écurie ambitieuse','Une belle jument pleine et plusieurs chevaux de bon niveau.'],[5000000,'Grand haras','Les lots les plus chers du catalogue sont à ta portée.'],[10000000,'Empire hippique','De quoi rivaliser avec les plus grandes écuries du monde.']];
   app.innerHTML=`<div class="screen"><div class="banner">${scene('setup')}</div>${tag('Étape 1 sur 2')}<h2>Ton écurie</h2>
   <div class="panel"><label class="f"><span>Nom de l'écurie</span><input type="text" id="stable" maxlength="32" value="${esc(d.stable)}"></label></div>
   <div class="panel"><span class="lbl">Capital de départ</span>
