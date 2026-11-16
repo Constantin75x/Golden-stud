@@ -438,6 +438,8 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .irl-news p{margin:4px 0 0}
 .irl-news .x{position:absolute;right:0;top:8px}
 #sheet textarea{width:100%;box-sizing:border-box;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;margin:6px 0}
+.cty-de{background:#1b1b1b;color:#ffce00;box-shadow:inset 0 -3px #dd0000}
+.cty-us{background:#1f3f86;color:#fff;box-shadow:inset 0 -3px #c8323c}
 </style>
 </head><body>
 <div id="app"></div>
@@ -1252,8 +1254,8 @@ function upcomingFeats(n){
 /* ===================== PROGRAMME COMPLET : FRANCE, ROYAUME-UNI, IRLANDE =====================
    Chaque jour : les réunions de galop françaises (réunion premium + province), britanniques et irlandaises,
    sur les vrais hippodromes, selon leur saison réelle. Grandes courses réelles à leurs dates habituelles. */
-const CTY={FR:{n:'France',f:'FR'},GB:{n:'Royaume-Uni',f:'GB'},IE:{n:'Irlande',f:'IRL'}};
-const TRAVEL={FR:0,GB:2500,IE:3500};
+const CTY={FR:{n:'France',f:'FR'},GB:{n:'Royaume-Uni',f:'GB'},IE:{n:'Irlande',f:'IRL'},DE:{n:'Allemagne',f:'DE'},US:{n:'États-Unis',f:'USA'}};
+const TRAVEL={FR:0,GB:2500,IE:3500,DE:1800,US:18000};
 const dowOnOrAfter=(Y,m,d,dow)=>{const x=mkD(Y,m,d);return addDays(x,(dow-x.getUTCDay()+7)%7)};
 function easter(Y){const a=Y%19,b=Math.floor(Y/100),c=Y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=(h+l-7*m+114)%31+1;return mkD(Y,mo-1,da)}
 const cheltFri=Y=>dowOnOrAfter(Y,2,13,5);
@@ -1264,6 +1266,7 @@ const gnSat=Y=>dowOnOrAfter(Y,3,5,6);
 const icsSat=Y=>nthDow(Y,8,6,2);
 const champDay=Y=>nthDow(Y,9,6,3);
 const fixD=(m,d)=>Y=>mkD(Y,m,d);
+const bcSat=Y=>dowOnOrAfter(Y,9,29,6);const bcT=Y=>Y===2026?'Keeneland':'Del Mar';
 const G=1.15; // livre → euro
 FEATS.push(...[
  // ---- Obstacle, Royaume-Uni ----
@@ -1356,6 +1359,33 @@ FEATS.push(...[
  {n:'Irish St Leger',t:'Curragh',cty:'IE',disc:'P',d:2800,c:'G1',age:'3+',tot:500000,lvl:112,dt:Y=>addDays(icsSat(Y),1)},
  {n:'Moyglare Stud Stakes',t:'Curragh',cty:'IE',disc:'P',d:1400,c:'G1',age:'2',sex:'F',tot:500000,lvl:103,dt:Y=>addDays(icsSat(Y),1)},
  {n:'National Stakes',t:'Curragh',cty:'IE',disc:'P',d:1400,c:'G1',age:'2',tot:400000,lvl:105,dt:Y=>addDays(icsSat(Y),1)},
+
+ // ---- Allemagne ----
+ {n:'Deutsches Derby',t:'Hamburg',cty:'DE',disc:'P',d:2400,c:'G1',age:'3',tot:650000,lvl:112,dt:Y=>nthDow(Y,6,0,1)},
+ {n:'Grosser Dallmayr-Preis',t:'München',cty:'DE',disc:'P',d:2000,c:'G1',age:'3+',tot:155000,lvl:113,dt:Y=>nthDow(Y,6,0,-1)},
+ {n:'Grosser Preis von Berlin',t:'Hoppegarten',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:200000,lvl:114,dt:Y=>nthDow(Y,7,0,2)},
+ {n:'Grosser Preis von Baden',t:'Baden-Baden',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:250000,lvl:116,dt:Y=>dowOnOrAfter(Y,8,1,0)},
+ {n:'Preis von Europa',t:'Köln',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:155000,lvl:114,dt:Y=>nthDow(Y,8,0,4)},
+ {n:'Grosser Preis von Bayern',t:'München',cty:'DE',disc:'P',d:2400,c:'G1',age:'3+',tot:155000,lvl:113,dt:Y=>nthDow(Y,10,0,1)},
+ // ---- États-Unis ----
+ {n:'Pegasus World Cup',t:'Gulfstream Park',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'4+',tot:3000000*0.87,lvl:118,dt:Y=>nthDow(Y,0,6,-1)},
+ {n:'Florida Derby',t:'Gulfstream Park',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'3',tot:1000000*0.87,lvl:108,dt:Y=>nthDow(Y,2,6,-1)},
+ {n:'Santa Anita Derby',t:'Santa Anita',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'3',tot:1000000*0.87,lvl:108,dt:Y=>nthDow(Y,3,6,1)},
+ {n:'Kentucky Oaks',t:'Churchill Downs',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'3',sex:'F',tot:1500000*0.87,lvl:108,dt:Y=>addDays(nthDow(Y,4,6,1),-1)},
+ {n:'Kentucky Derby',t:'Churchill Downs',cty:'US',dirt:1,disc:'P',d:2000,c:'G1',age:'3',tot:5000000*0.87,lvl:113,dt:Y=>nthDow(Y,4,6,1)},
+ {n:'Preakness Stakes',t:'Laurel Park',tf:Y=>Y===2026?'Laurel Park':'Pimlico',cty:'US',dirt:1,disc:'P',d:1900,c:'G1',age:'3',tot:2000000*0.87,lvl:110,dt:Y=>nthDow(Y,4,6,3)},
+ {n:'Belmont Stakes',t:'Saratoga',tf:Y=>Y<=2026?'Saratoga':'Belmont Park',cty:'US',dirt:1,disc:'P',d:2000,c:'G1',age:'3',tot:2000000*0.87,lvl:111,dt:Y=>nthDow(Y,5,6,1)},
+ {n:'Whitney Stakes',t:'Saratoga',cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'3+',tot:1000000*0.87,lvl:115,dt:Y=>nthDow(Y,7,6,1)},
+ {n:'Travers Stakes',t:'Saratoga',cty:'US',dirt:1,disc:'P',d:2000,c:'G1',age:'3',tot:1250000*0.87,lvl:110,dt:Y=>nthDow(Y,7,6,-1)},
+ {n:"Breeders' Cup Juvenile",t:'Keeneland',tf:bcT,cty:'US',dirt:1,disc:'P',d:1700,c:'G1',age:'2',tot:2000000*0.87,lvl:104,dt:Y=>addDays(bcSat(Y),-1)},
+ {n:"Breeders' Cup Juvenile Turf",t:'Keeneland',tf:bcT,cty:'US',disc:'P',d:1600,c:'G1',age:'2',tot:1000000*0.87,lvl:102,dt:Y=>addDays(bcSat(Y),-1)},
+ {n:"Breeders' Cup Juvenile Fillies Turf",t:'Keeneland',tf:bcT,cty:'US',disc:'P',d:1600,c:'G1',age:'2',sex:'F',tot:1000000*0.87,lvl:100,dt:Y=>addDays(bcSat(Y),-1)},
+ {n:"Breeders' Cup Sprint",t:'Keeneland',tf:bcT,cty:'US',dirt:1,disc:'P',d:1200,c:'G1',age:'3+',tot:2000000*0.87,lvl:115,dt:bcSat},
+ {n:"Breeders' Cup Distaff",t:'Keeneland',tf:bcT,cty:'US',dirt:1,disc:'P',d:1800,c:'G1',age:'3+',sex:'F',tot:2000000*0.87,lvl:113,dt:bcSat},
+ {n:"Breeders' Cup Filly & Mare Turf",t:'Keeneland',tf:bcT,cty:'US',disc:'P',d:2200,c:'G1',age:'3+',sex:'F',tot:2000000*0.87,lvl:112,dt:bcSat},
+ {n:"Breeders' Cup Mile",t:'Keeneland',tf:bcT,cty:'US',disc:'P',d:1600,c:'G1',age:'3+',tot:2000000*0.87,lvl:116,dt:bcSat},
+ {n:"Breeders' Cup Turf",t:'Keeneland',tf:bcT,cty:'US',disc:'P',d:2400,c:'G1',age:'3+',tot:5000000*0.87,lvl:118,dt:bcSat},
+ {n:"Breeders' Cup Classic",t:'Keeneland',tf:bcT,cty:'US',dirt:1,disc:'P',d:2000,c:'G1',age:'3+',tot:7000000*0.87,lvl:122,dt:bcSat},
 ].map(f=>Object.assign({cty:'GB'},f,{tot:Math.round(f.tot/1000)*1000})));
 FEATS.forEach(f=>{if(!f.cty)f.cty='FR'});
 
@@ -1373,7 +1403,11 @@ const TRK=[
  ['Châteaubriant','FR','P','3-10',.6,0],['Nancy','FR','M','4-10',.5,0],['Lyon-La Soie','FR','A','1-12',1,0],['Marseille-Pont-de-Vivaux','FR','A','1-12',.8,0],
  ['Pornichet-La Baule','FR','A','3-11',.8,0],['Senonnes-Pouancé','FR','O','4-10',.5,0],['Le Pin-au-Haras','FR','O','8-8',.4,0],['Argentan','FR','M','3-10',.6,0],
  ["Les Sables-d'Olonne",'FR','P','7-8',.4,0],['Royan-La Palmyre','FR','P','7-8',.3,0],['Lignières','FR','M','4-10',.4,0],['Vittel','FR','M','6-9',.4,0],
- ['Cholet','FR','M','4-10',.4,0],['Salon-de-Provence','FR','M','3-11',.4,0],['Aix-les-Bains','FR','M','5-9',.4,0],['Hyères','FR','O','2-4',.3,0],
+ ['Cholet','FR','M','4-10',.4,0],['Pompadour','FR','O','5-9',.5,0],['Tarbes','FR','M','3-11',.6,0],['Oloron-Sainte-Marie','FR','O','5-9',.3,0],['Saumur-Verrie','FR','O','3-10',.5,0],
+ ['Segré','FR','O','4-9',.4,0],['Sablé-sur-Sarthe','FR','M','4-10',.4,0],['Fontenay-le-Comte','FR','M','4-10',.4,0],['Machecoul','FR','M','3-10',.4,0],['Nort-sur-Erdre','FR','O','4-10',.3,0],
+ ['Corlay','FR','O','4-10',.3,0],['Amiens','FR','M','4-10',.4,0],['Avignon','FR','M','3-11',.5,0],['Nîmes','FR','M','10-5',.5,0],['Dinard','FR','M','6-9',.4,0],['Bénesse-Maremne','FR','M','4-10',.3,0],
+ ['Lisieux','FR','M','5-9',.3,0],['Évreux','FR','M','4-10',.3,0],['Le Mans','FR','M','4-10',.3,0],['Vire','FR','M','5-9',.2,0],['Agen-La Garenne','FR','M','3-10',.3,0],['Beaumont-de-Lomagne','FR','M','4-10',.2,0],
+ ['Lyon-Parilly','FR','O','10-3',.6,0],['Pau','FR','O','12-3',1,0],['Compiègne','FR','O','3-11',.6,0],['Fontainebleau','FR','O','3-11',.5,0],['Craon','FR','O','9-9',.4,0],['Salon-de-Provence','FR','M','3-11',.4,0],['Aix-les-Bains','FR','M','5-9',.4,0],['Hyères','FR','O','2-4',.3,0],
  // Royaume-Uni
  ['Ascot','GB','P','5-10',.8],['Newmarket','GB','P','4-10',1.5],['York','GB','P','5-10',.7],['Epsom','GB','P','4-9',.4],['Goodwood','GB','P','5-10',.8],
  ['Doncaster','GB','P','3-11',1],['Haydock','GB','P','4-10',1],['Sandown','GB','P','4-9',.8],['Newbury','GB','P','4-10',.8],['Chester','GB','P','5-9',.6],
@@ -1401,9 +1435,16 @@ const TRK=[
  ['Down Royal','IE','O','10-3',.5],['Downpatrick','IE','O','10-4',.4],['Tramore','IE','O','10-4',.4],['Wexford','IE','O','10-4',.5],['Galway','IE','O','7-10',.5],
  ['Kilbeggan','IE','O','5-9',.5],['Ballinrobe','IE','O','5-9',.3],['Listowel','IE','O','9-9',.3],['Tipperary','IE','O','7-10',.4],['Bellewstown','IE','O','6-8',.3],
  ['Killarney','IE','O','5-8',.3],['Roscommon','IE','O','5-9',.3],['Sligo','IE','O','5-9',.3],
+ // Allemagne
+ ['Baden-Baden','DE','P','5-6',.6],['Baden-Baden','DE','P','8-10',.8],['Hamburg','DE','P','6-7',.6],['Köln','DE','P','3-11',1],['Düsseldorf','DE','P','4-10',.8],['München','DE','P','4-11',.8],
+ ['Hoppegarten','DE','P','4-10',.8],['Hannover','DE','P','4-10',.6],['Dortmund','DE','P','4-10',.6],['Dortmund','DE','A','11-3',1.2],['Krefeld','DE','P','3-11',.6],['Mülheim','DE','P','4-10',.5],['Leipzig','DE','P','5-10',.4],
+ // États-Unis (terre et gazon sur la même réunion)
+ ['Saratoga','US','U','7-9',1.4],['Aqueduct','US','U','11-4',1],['Belmont Park','US','U','5-6',1],['Belmont Park','US','U','9-10',1],['Churchill Downs','US','U','4-6',1],['Churchill Downs','US','U','9-11',.9],
+ ['Keeneland','US','U','4-4',1.2],['Keeneland','US','U','10-10',1.2],['Santa Anita','US','U','12-6',1.2],['Santa Anita','US','U','9-11',.8],['Del Mar','US','U','7-9',1.2],['Del Mar','US','U','11-11',.6],
+ ['Gulfstream Park','US','U','1-12',1.5],['Laurel Park','US','U','1-12',.8],['Oaklawn Park','US','U','1-5',1],['Fair Grounds','US','U','12-3',1],['Monmouth Park','US','U','5-9',.8],['Kentucky Downs','US','U','9-9',.4],
 ].map(([n,c,k,mo,w,p])=>{const [a,b]=mo.split('-').map(Number);return {n,c,k,a,b,w,p:!!p}});
 const trkOn=(t,m1)=>t.a<=t.b?m1>=t.a&&m1<=t.b:m1>=t.a||m1<=t.b;
-const BIG_X=['Ascot','York','Newmarket','Goodwood','Epsom','Doncaster','Sandown','Haydock','Newbury','Cheltenham','Aintree','Kempton','Curragh','Leopardstown','Punchestown','Fairyhouse'];
+const BIG_X=['Baden-Baden','Hamburg','Köln','München','Hoppegarten','Saratoga','Belmont Park','Churchill Downs','Keeneland','Santa Anita','Del Mar','Gulfstream Park','Ascot','York','Newmarket','Goodwood','Epsom','Doncaster','Sandown','Haydock','Newbury','Cheltenham','Aintree','Kempton','Curragh','Leopardstown','Punchestown','Fairyhouse'];
 
 /* Noms de courses */
 const FRT=['Touques','Villers','Bénerville','Tourgéville','Lisieux','Honfleur','Cabourg','Houlgate','Dives','Beuvron','Cambremer','Livarot','Falaise','Bayeux','Trouville','Blonville','Saint-Gatien','Canapville','Gouvieux','Lamorlaye','Coye','Vineuil','Senlis','Saint-Germain','Rueil','Marly','Bagatelle','Biarritz','Provence','Bretagne','Picardie','Normandie','Touraine','Gascogne','Lorraine','Chambord','Cheverny','Chenonceau','Amboise','Blois','Saumur','Chinon','Vendôme','Beaugency','Pithiviers','Rambouillet','Versailles','Meudon','Sèvres','Garches','Vaucresson','Marnes','Bougival','Croissy','Chatou','Montesson','Le Vésinet','Poissy','Conflans','Pontoise','Beaumont','Luzarches','Mortefontaine','Ermenonville','Chaalis','Pontarmé','Orry','Apremont','Avilly','Barbizon','Moret','Samois','Nemours','Milly','Thomery','Avon','Bois-le-Roi','Melun','Provins','Meaux','Crécy','Coulommiers','Compiègne','Pierrefonds','Vieux-Moulin','Choisy','Rethondes','Noyon','Soissons','Laon','Reims','Épernay','Ay','Bouzy','Cramant','Chablis','Beaune','Pommard','Meursault','Volnay','Nuits','Gevrey','Mâcon','Cluny','Tournus','Vienne','Condrieu','Tain','Valence','Montélimar','Orange','Avignon','Arles','Nîmes','Uzès','Sète','Agde','Béziers','Narbonne','Carcassonne','Albi','Castres','Montauban','Moissac','Agen','Nérac','Condom','Auch','Tarbes','Lourdes','Oloron','Orthez','Salies','Bayonne','Hossegor','Capbreton','Arcachon','Cap Ferret','Pauillac','Margaux','Saint-Émilion','Pomerol','Libourne','Cognac','Jarnac','Saintes','Rochefort','Niort','Fontenay','Luçon','Challans','Clisson','Ancenis','Segré','Château-Gontier','Laval','Mayenne','Alençon','Mortagne','Bellême','Nogent','Chartres','Dreux','Évreux','Vernon','Giverny','Les Andelys','Gisors','Lyons','Forges','Neufchâtel','Eu','Le Tréport','Fécamp','Étretat','Yvetot','Caudebec','Jumièges','Pont-Audemer','Beuzeville','Pont-l\'Évêque','Deauville','Orbec','Vimoutiers','Gacé','Le Merlerault','Sées','Argentan','Écouché','Carrouges','Domfront','Flers','Vire','Saint-Lô','Coutances','Granville','Avranches','Pontorson','Dinard','Dinan','Cancale','Combourg','Fougères','Vitré','Redon','Vannes','Auray','Carnac','Quiberon','Lorient','Quimperlé','Concarneau','Quimper','Douarnenez','Morlaix','Lannion','Paimpol','Guingamp','Lamballe','Loudéac','Pontivy','Josselin','Ploërmel','Malestroit'];
@@ -1411,10 +1452,14 @@ const FRX=['du Haras du Pin','de la Société d\'Encouragement','des Pouliches',
 const prixDe=t=>/^(Le |Les )/.test(t)?'Prix d'+(t[1]==='e'&&t[2]===' '?'u '+t.slice(3):'es '+t.slice(4)):/^[AEIOUÉÈÂÎ]/.test(t)?"Prix d'"+t:'Prix de '+t;
 const GBN=['Abbey','Beacon','Castle','Downs','Fairlawne','Kingsclere','Lambourn','Manton','Oakley','Priory','Rowley','Severn','Thames','Upavon','Weald','Cotswold','Malvern','Mendip','Chiltern','Pennine','Wessex','Avon','Exmoor','Dartmoor','Sherwood','Kielder','Eden','Tweed','Cheviot','Tamar','Wye','Usk','Brecon','Thetford','Breckland','Fenland','Trent','Humber','Tyne','Wear','Tees','Lune','Ribble','Mersey','Dee','Clarence','Wolsey','Tudor','Stuart','Windsor Forest','Bramley','Ashdown','Kennet','Berkshire','Hampshire','Dorset','Wiltshire','Somerset','Devon','Cornwall','Suffolk','Norfolk','Essex','Kent','Sussex','Surrey','Oxford','Cambridge','Yorkshire','Durham','Northumberland','Cumbria','Lancashire','Cheshire','Shropshire','Herefordshire','Worcestershire','Gloucestershire','Warwickshire','Leicestershire','Rutland','Lincolnshire','Derbyshire','Staffordshire','Clydesdale','Lothian','Highland','Borders','Glamorgan','Pembroke','Gower','Snowdonia','Silver Ring','Paddock','Grandstand','Owners\' Club','Racing Welfare','Injured Jockeys Fund','Stable Staff','Apprentice','Amateur Riders\'','Conditional Jockeys\'','Mares\'','Juvenile','Veterans\''];
 const IEN=['Liffey','Shannon','Boyne','Barrow','Suir','Nore','Slaney','Lee','Blackwater','Corrib','Kildare','Wicklow','Galtee','Comeragh','Knockmealdown','Slieve Bloom','Mourne','Burren','Connemara','Dingle','Killarney','Tipperary','Golden Vale','Rossmore','Glencairn','Moyvalley','Athgarvan','Brownstown','Kilcullen','Maynooth','Clane','Carbury','Rathangan','Monasterevin','Portlaoise','Mountrath','Fethard','Cashel','Kilkenny','Carlow','Wexford','Waterford','Cork','Kerry','Clare','Limerick','Offaly','Meath','Westmeath','Louth','Dublin','Mayo','Sligo','Leitrim','Donegal','Galway','Roscommon','Longford','Cavan','Monaghan','Laois','Irish Stallion Farms EBF','Racing Post','Irish Injured Jockeys','Mares\'','Rated','Apprentice','Amateur Riders\'','Ladies\''];
+const DEN=['Rhein','Main','Neckar','Elbe','Isar','Mosel','Schwarzwald','Taunus','Eifel','Harz','Spessart','Odenwald','Allgäu','Bodensee','Kurpark','Lichtentaler Allee','Merkur','Iffezheim','Oos','Alster','Elbchaussee','Domstadt','Rheinland','Westfalen','Bayern','Franken','Schwaben','Sachsen','Thüringen','Brandenburg','Havel','Spree','Grunewald','Tiergarten','Marienburg','Weidenpesch','Grafenberg','Riem','Hoppegarten','Ruhr','Emscher','Weser','Leine','Herrenhausen','Wiesbaden','Kaiserpfalz','Hansestadt'];
+const USN=['Bluegrass','Hudson','Spa','Adirondack','Catskill','Long Island','Jamaica Bay','Ozone Park','Elmont','Lexington','Bourbon','Louisville','Twin Spires','Ohio River','Arcadia','San Gabriel','Pasadena','Malibu','Sunset','Solana Beach','Pacific','Hallandale','Biscayne','Palm Beach','Hot Springs','Razorback','Bayou','Mardi Gras','Chesapeake','Old Line','Oceanport','Garden State','Franklin','Saratoga Springs','Gotham','Empire','Lone Star','Golden Gate','Silver State','Magnolia'];
 const EN1=['Golden','Silver','Royal','Night','Storm','River','Wild','Silent','Lucky','Noble','Dancing','Highland','Celtic','Midnight','Northern','Western','Brave','Bold','Iron','Velvet','Copper','Scarlet','Crimson','Emerald','Shadow','Summer','Winter','Morning','Thunder','Desert','Ballyhale','Kilmore','Glen','Lough','Clonee','Cashel','Tara','Captain','Mister','Lady','King\'s','Queen\'s','Sir','Dark','Bright','Flying','Secret','Hidden','Lost','Free'];
 const EN2=['Arrow','Legend','Spirit','Dancer','Warrior','Prince','Lady','Echo','Falcon','Harbour','Glory','Quest','Rebel','Comet','Crown','Valley','Ranger','Whisper','Tempest','Mist','Sovereign','Kestrel','Fortune','Jet','Pioneer','Voyager','Charm','Rhapsody','Story','Banner','Lad','Boy','Girl','Star','Moon','Flame','Breeze','Rover','Hero','Rogue','Native','Venture','Gambler','Sky','Road','Bay','Hill','Lane','Gold','Dream'];
 const oppNameX=()=>pick(EN1)+' '+pick(EN2);
-function raceNameX(c,disc,cls,two,used){let b,k=0;do{b=pick(c==='IE'?IEN:GBN);k++}while(used.has(b)&&k<40);used.add(b);
+function raceNameX(c,disc,cls,two,used){let b,k=0;if(c==='DE'){do{b=pick(DEN);k++}while(used.has(b)&&k<40);used.add(b);return (cls==='HA'?'Ausgleich · ':cls==='MA'?'Maidenrennen · ':cls==='RE'?'Verkaufsrennen · ':'')+b+'-Preis'}
+  if(c==='US'){do{b=pick(USN);k++}while(used.has(b)&&k<40);used.add(b);return ({MA:two?'Maiden Special Weight (2 ans)':'Maiden Special Weight',RE:'Claiming',HA:'Starter Handicap',C2:'Allowance',C1:'Allowance Optional Claiming',L:b+' Stakes',G3:b+' Stakes',G2:b+' Stakes'})[cls]}
+  do{b=pick(c==='IE'?IEN:GBN);k++}while(used.has(b)&&k<40);used.add(b);
   if(disc==='P'){const t={MA:two?'Novice Stakes':c==='IE'?'Maiden':'Maiden Stakes',RE:c==='IE'?'Claiming Race':'Claiming Stakes',HA:'Handicap',C2:'Conditions Stakes',C1:'Stakes',L:'Stakes (Listed)',G3:'Stakes',G2:'Stakes'}[cls];return b+' '+t}
   if(disc==='H')return b+' '+({MA:c==='IE'?'Maiden Hurdle':"Novices' Hurdle",RE:'Selling Hurdle',HA:'Handicap Hurdle',C2:'Intermediate Hurdle',L:'Hurdle (Listed)',G3:'Hurdle',G2:'Hurdle'}[cls]);
   if(disc==='C')return b+' Cross Country Chase';
@@ -1424,16 +1469,16 @@ function raceNameFR(used){let n,k=0;do{n=Math.random()<.9?prixDe(pick(FRT)):'Pri
 
 /* Courses ordinaires au Royaume-Uni et en Irlande */
 function genFlatX(c,t,m,aw){const big=BIG_X.includes(t)&&!aw;
-  const cls=wpick(aw?{MA:2.5,RE:1,HA:7,C2:.5,C1:.2,L:.15}:big?{MA:2.5,RE:.3,HA:5,C2:.8,C1:.6,L:.9,G3:.6,G2:.3}:{MA:2.5,RE:.8,HA:6.5,C2:.5,C1:.3,L:.2});
+  const cls=wpick(c==='US'?(big?{MA:2.5,RE:3,HA:.4,C2:2,C1:1.5,L:.6,G3:.35,G2:.15}:{MA:2.5,RE:4.5,HA:.3,C2:1.5,C1:1,L:.25}):aw?{MA:2.5,RE:1,HA:7,C2:.5,C1:.2,L:.15}:big?{MA:2.5,RE:.3,HA:5,C2:.8,C1:.6,L:.9,G3:.6,G2:.3}:{MA:2.5,RE:.8,HA:6.5,C2:.5,C1:.3,L:.2});
   const two=m>=4&&Math.random()<(m>=6?.3:.18);
   let age=two?'2':cls==='HA'?pick(['3','3+','4+','3+']):cls==='MA'?'3':pick(['3','3+','4+']);if(cls==='RE'&&!two)age=pick(['3+','4+']);
   const d=two?pick([1000,1200,1200,1400,1600]):pick([1000,1200,1200,1400,1400,1600,1600,1800,2000,2000,2200,2400,2800,3200]);
   const C=CLF[cls];let lvl=C.lvl,band=null;
   if(cls==='HA'){const b=pick(aw?[[40,58],[46,64],[52,70],[58,76],[64,82]]:[[46,64],[52,70],[58,76],[64,82],[70,88],[80,98]]);band=b;lvl=(b[0]+b[1])/2}
   if(two&&lvl)lvl-=6;
-  const base=c==='IE'?{MA:13000,RE:10000,C2:26000,C1:32000,L:55000,G3:75000,G2:115000}:{MA:8500,RE:6500,C2:24000,C1:32000,L:60000,G3:90000,G2:140000};
-  let tot=cls==='HA'?(c==='IE'?11000+(lvl-40)*420:5500+(lvl-40)*520):base[cls];tot*=big?1.35:aw?.85:1;
-  return {disc:'P',d,c:cls,age,band,lvl,tot:nice(tot),claim:cls==='RE'?(c==='IE'?pick([8000,10000,12000]):pick([5000,6000,8000,10000])):0,two};
+  const base=c==='IE'?{MA:13000,RE:10000,C2:26000,C1:32000,L:55000,G3:75000,G2:115000}:c==='DE'?{MA:8000,RE:6000,C2:12000,C1:15000,L:25000,G3:55000,G2:70000}:c==='US'?{MA:60000,RE:28000,C2:70000,C1:80000,L:110000,G3:170000,G2:250000}:{MA:8500,RE:6500,C2:24000,C1:32000,L:60000,G3:90000,G2:140000};
+  let tot=cls==='HA'?(c==='IE'?11000+(lvl-40)*420:c==='DE'?4500+(lvl-40)*120:c==='US'?30000+(lvl-40)*500:5500+(lvl-40)*520):base[cls];tot*=big?(c==='US'?1.3:1.35):aw?.85:1;
+  return {disc:'P',d,c:cls,age,band,lvl,tot:nice(tot),claim:cls==='RE'?(c==='US'?pick([14000,20000,28000,35000,45000,70000]):c==='IE'?pick([8000,10000,12000]):pick([5000,6000,8000,10000])):0,two};
 }
 function genJumpX(c,t,m){const big=BIG_X.includes(t);
   const disc=(t==='Cheltenham'||t==='Punchestown')&&Math.random()<.06?'C':Math.random()<.56?'H':'S';
@@ -1448,43 +1493,45 @@ function genJumpX(c,t,m){const big=BIG_X.includes(t);
 }
 
 /* Combien de réunions par jour (0 = dimanche) */
-const MEETS={FR:[5,3,3,4,4,4,4],GB:[3,4,4,5,5,6,7],IE:[2,1,1,1,2,2,3]};
+const MEETS={FR:[8,5,4,5,5,5,6],GB:[3,4,4,5,5,6,7],IE:[2,1,1,1,2,2,3],DE:[2,0,0,1,0,1,2],US:[4,1,0,3,4,4,5]};
 function planDay(c,day,mm,dow,fx,used){
   const m1=mm+1;const out=[];const today=new Set();
   const byT={};fx.forEach(x=>{(byT[x.f.t]=byT[x.f.t]||[]).push(x.f)});
   Object.keys(byT).forEach(t=>{const fs=byT[t];const k=fs[0].disc==='P'?'P':'O';const spec=TRK.find(x=>x.n===t&&x.c===c&&x.k===k)||{n:t,c,k,p:1};
     out.push({t,c,k,prem:c==='FR',big:true,fx:fs});today.add(t);used[t+k]=(used[t+k]||0)+1});
-  let n=MEETS[c][dow]+(Math.random()<.35?1:0)-(Math.random()<.2?1:0);if(c==='FR'&&mm>=5&&mm<=7)n++;if(c==='IE'&&mm>=4&&mm<=8&&dow>=3)n++;
+  let n=MEETS[c][dow]+(Math.random()<.35?1:0)-(Math.random()<.2?1:0);if(c==='FR'&&mm>=3&&mm<=9)n+=dow===0?3:1;if(c==='DE'&&(mm<3||mm>10))n=Math.min(n,1);if(c==='IE'&&mm>=4&&mm<=8&&dow>=3)n++;
   const cand=()=>TRK.filter(x=>x.c===c&&trkOn(x,m1)&&!today.has(x.n)&&(used[x.n+x.k]||0)<(x.k==='A'?3:c==='IE'||x.p?2:1));
   if(c==='FR'&&!out.some(o=>o.prem)){const p=cand().filter(x=>x.p);if(p.length){const w={};p.forEach((x,i)=>w[i]=x.w);const x=p[+wpick(w)];out.push({t:x.n,c,k:x.k,prem:true,fx:[]});today.add(x.n);used[x.n+x.k]=(used[x.n+x.k]||0)+1}}
   while(out.length<n){const L=cand();if(!L.length)break;const w={};L.forEach((x,i)=>w[i]=x.w*(c!=='FR'&&x.k==='A'&&(mm>=10||mm<=2)?1.6:1));const x=L[+wpick(w)];out.push({t:x.n,c,k:x.k,prem:false,fx:[]});today.add(x.n);used[x.n+x.k]=(used[x.n+x.k]||0)+1}
   return out;
 }
 function cardFor(mt,day,mm,idx){
-  const se=seasonOf(mm),c=mt.c;const n=c==='FR'?(mt.prem?8:6+rint(3)):c==='GB'?6+rint(3):7+rint(2);
+  const se=seasonOf(mm),c=mt.c;const n=c==='FR'?(mt.prem?8:6+rint(3)):c==='GB'?6+rint(3):c==='US'?9+rint(2):c==='DE'?8+rint(3):7+rint(2);
   const gen=Math.max(mt.fx.length?3:0,n-mt.fx.length);const used=new Set(),R=[];
-  const surf=mt.k==='A'?'PSF':'Gazon';const gg=goingFor(mm,surf);
+  const surf=mt.k==='A'?'PSF':'Gazon';const gg=goingFor(mm,surf);const DG=pick(['Dirt rapide','Dirt rapide','Dirt rapide','Dirt bon','Dirt boueux','Dirt détrempé']);const turfOK=mt.k==='U'&&mm>=3&&mm<=10||['Gulfstream Park','Santa Anita','Fair Grounds'].includes(mt.t);
   for(let i=0;i<gen;i++){let r;
     const jump=mt.k==='O'||(mt.k==='M'&&i>=Math.floor(gen/2));
     if(c==='FR'){r=jump?genJump(mt.t,mm,se):genFlat(mt.t,mm,mt.k==='A'?'w':se);if(!r)continue;if(!mt.prem)r.tot=nice(r.tot*.62);r.n=raceNameFR(used)}
-    else{r=jump?genJumpX(c,mt.t,mm):genFlatX(c,mt.t,mm,mt.k==='A');r.n=raceNameX(c,r.disc,r.c,r.two,used);delete r.two}
+    else if(c==='US'){const dirt=!turfOK||Math.random()<.68;r=genFlatX(c,mt.t,mm,dirt);if(dirt){r.surf='PSF';r.dirt=1;r.going=DG;r.gv=-.4;r.d=pick([1000,1100,1200,1200,1400,1600,1700,1800,1800,2000])}else{r.surf='Gazon';r.going=gg[0];r.gv=gg[1];r.d=pick([1000,1100,1600,1700,1800,1800,2000,2200,2400])}r.n=raceNameX(c,'P',r.c,r.two,used);delete r.two}
+    else{r=jump&&c!=='DE'?genJumpX(c,mt.t,mm):genFlatX(c,mt.t,mm,mt.k==='A');r.n=raceNameX(c,r.disc,r.c,r.two,used);delete r.two}
     R.push(r)}
-  mt.fx.forEach((f,i)=>{const r={...f,lvl:f.lvl-3,feat:true};delete r.dt;R.splice(Math.min(R.length,3+i),0,r)});
+  mt.fx.forEach((f,i)=>{const r={...f,lvl:f.lvl-3,feat:true};delete r.dt;delete r.tf;if(r.dirt){r.surf='PSF';r.going=DG;r.gv=-.4}else if(c==='US'){r.surf='Gazon';r.going=gg[0];r.gv=gg[1]}R.splice(Math.min(R.length,3+i),0,r)});
   // horaires (heure française)
   let st=c==='FR'?(mt.prem?(day.getUTCDay()===0?13*60+50:13*60+35):pick([11*60+45,12*60,12*60+15,16*60])):c==='GB'?(mt.k==='A'&&idx%2===1?pick([16*60+30,17*60,17*60+30]):(mm>=4&&mm<=7&&mt.k==='P'&&Math.random()<.35?18*60+30:13*60+15+rint(10)*10)):(mt.k==='A'?17*60+30:13*60+20+rint(6)*10);
-  const gap=c==='FR'?30:35;
-  return R.map((r,i)=>Object.assign(r,{date:day.getTime(),surf,going:gg[0],gv:gg[1],t:mt.t,cty:c,tm:st+i*gap,rn:i+1,reu:c==='FR'?idx+1:0,prem:!!mt.prem}));
+  if(c==='DE')st=13*60+rint(4)*15;if(c==='US')st=['Santa Anita','Del Mar'].includes(mt.t)?21*60+30:18*60+rint(3)*30;
+  const gap=c==='FR'?30:c==='US'?32:35;
+  return R.map((r,i)=>Object.assign(r,{date:day.getTime(),surf:r.surf||surf,going:r.going||gg[0],gv:r.gv!=null&&c==='US'?r.gv:gg[1],t:mt.t,cty:c,tm:st+i*gap,rn:i+1,reu:c==='FR'?idx+1:0,prem:!!mt.prem}));
 }
 function buildProgram(){
   const mon=now(),sun=sunday();const races=[];const used={};const feats=[];
-  [yearOf(mon),yearOf(sun)].filter((v,i,a)=>a.indexOf(v)===i).forEach(y=>FEATS.forEach(f=>{const d=f.dt(y);if(d>=mon&&d<=sun)feats.push({f,d})}));
+  [yearOf(mon),yearOf(sun)].filter((v,i,a)=>a.indexOf(v)===i).forEach(y=>FEATS.forEach(f=>{const d=f.dt(y);if(d>=mon&&d<=sun)feats.push({f:f.tf?Object.assign({},f,{t:f.tf(y)}):f,d})}));
   for(let i=0;i<7;i++){const day=addDays(mon,i),dow=day.getUTCDay(),mm=day.getUTCMonth();
     const dayF=feats.filter(x=>x.d.getTime()===day.getTime());
-    ['FR','GB','IE'].forEach(c=>planDay(c,day,mm,dow,dayF.filter(x=>x.f.cty===c),used).forEach((mt,k)=>cardFor(mt,day,mm,k).forEach(r=>{r.fee=Math.max(150,Math.round(r.tot*(r.c==='G1'?.02:.012)/10)*10)+TRAVEL[c];races.push(r)})));
+    ['FR','GB','IE','DE','US'].forEach(c=>planDay(c,day,mm,dow,dayF.filter(x=>x.f.cty===c),used).forEach((mt,k)=>cardFor(mt,day,mm,k).forEach(r=>{r.fee=Math.max(150,Math.round(r.tot*(r.c==='G1'?.02:.012)/10)*10)+TRAVEL[c];races.push(r)})));
   }
   return sortRaces(races);
 }
-const CORD={FR:0,GB:1,IE:2};
+const CORD={FR:0,GB:1,IE:2,DE:3,US:4};
 function sortRaces(L){L.sort((a,b)=>a.date-b.date||CORD[a.cty||'FR']-CORD[b.cty||'FR']||(a.reu||9)-(b.reu||9)||(a.t<b.t?-1:a.t>b.t?1:0)||(a.tm||0)-(b.tm||0));L.forEach((r,i)=>r.id=i);return L}
 
 /* Mise à jour d'une partie en cours : nouveau programme complet, engagements conservés */
@@ -1513,19 +1560,27 @@ function migrateProgram(){
  ['rwhelan','Ronan Whelan','P','IE',.83],['scrosse','Shane Crosse','P','IE',.8],
  ['townend','Paul Townend','O','IE',.97],['jkennedy','Jack Kennedy','O','IE',.95],['mwalsh','Mark Walsh','O','IE',.92],['dmullins','Danny Mullins','O','IE',.9],
  ['ewing','Sam Ewing','O','IE',.87],['dokeeffe','Darragh O\'Keeffe','O','IE',.87],['mosullivan','Michael O\'Sullivan','O','IE',.87],['slevin','J.J. Slevin','O','IE',.86],
- ['bhayes','Brian Hayes','O','IE',.86],['kdonoghue','Keith Donoghue','O','IE',.85],['sokeeffe','Sean O\'Keeffe','O','IE',.84],['pohanlon','Paddy O\'Hanlon','O','IE',.82],
+ ['bhayes','Brian Hayes','O','IE',.86],
+ ['murzabayev','Bauyrzhan Murzabayev','P','DE',.9],['piechulek','René Piechulek','P','DE',.86],['devries','Adrie de Vries','P','DE',.86],['hammerhansen','Thore Hammer-Hansen','P','DE',.84],
+ ['seidl','Martin Seidl','P','DE',.82],['svogt','Sibylle Vogt','P','DE',.82],['pietsch','Alexander Pietsch','P','DE',.8],['lwolff','Leon Wolff','P','DE',.8],['cadeddu','Michael Cadeddu','P','DE',.8],['helfenbein','Andreas Helfenbein','P','DE',.78],['panov','Wladimir Panov','P','DE',.78],
+ ['iortiz','Irad Ortiz Jr','P','US',.97],['jortiz','Jose Ortiz','P','US',.93],['fprat','Flavien Prat','P','US',.96],['gaffalione','Tyler Gaffalione','P','US',.92],['rosario','Joel Rosario','P','US',.92],
+ ['lsaez','Luis Saez','P','US',.92],['velazquez','John Velazquez','P','US',.9],['rispoli','Umberto Rispoli','P','US',.89],['jalvarado','Junior Alvarado','P','US',.88],['castellano','Javier Castellano','P','US',.88],
+ ['mfranco','Manuel Franco','P','US',.86],['jjhernandez','Juan Hernandez','P','US',.9],['geroux','Florent Geroux','P','US',.88],['ddavis','Dylan Davis','P','US',.84],['plopez','Paco Lopez','P','US',.84],
+ ['bhernandez','Brian Hernandez Jr','P','US',.85],['carmouche','Kendrick Carmouche','P','US',.83],['zayas','Edgard Zayas','P','US',.84],['fresu','Antonio Fresu','P','US',.84],['berrios','Hector Berrios','P','US',.8],['kdonoghue','Keith Donoghue','O','IE',.85],['sokeeffe','Sean O\'Keeffe','O','IE',.84],['pohanlon','Paddy O\'Hanlon','O','IE',.82],
 ].forEach(([id,n,d,c,s])=>{const skill=.2+.8*(s-.55)/.45;JOCKEYS.push({id,n,d,c,w:null,skill:clamp(skill,.4,1),fee:Math.round((150+250*clamp(skill,.4,1))/10)*10+200})});
 JOCKEYS.forEach(j=>{if(!j.c)j.c='FR'});
-const jkPool=r=>JOCKEYS.filter(j=>(isJ(r)?j.d==='O':j.d==='P')&&((r.cty||'FR')==='FR'?j.c==='FR':j.c!=='FR'));
-const jkChoice=r=>{const c=r.cty||'FR';const L=JOCKEYS.filter(j=>isJ(r)?j.d==='O':j.d==='P');return c==='FR'?L.filter(j=>j.c==='FR'):[...L.filter(j=>j.c===c),...L.filter(j=>j.c!=='FR'&&j.c!==c),...L.filter(j=>j.c==='FR')]};
-const jkTag=j=>j.c==='FR'?`${j.w} v.`:j.c==='GB'?'Royaume-Uni':'Irlande';
+const jkZone=c=>c==='GB'||c==='IE'?'UK':c;
+const jkPool=r=>{const z=jkZone(r.cty||'FR');return JOCKEYS.filter(j=>(isJ(r)?j.d==='O':j.d==='P')&&jkZone(j.c)===z)};
+const jkChoice=r=>{const c=r.cty||'FR';const L=JOCKEYS.filter(j=>isJ(r)?j.d==='O':j.d==='P');return c==='FR'?L.filter(j=>j.c==='FR'):[...L.filter(j=>jkZone(j.c)===jkZone(c)),...L.filter(j=>j.c==='FR'),...L.filter(j=>j.c!=='FR'&&jkZone(j.c)!==jkZone(c))]};
+const jkTag=j=>j.c==='FR'?`${j.w} v.`:CTY[j.c].n;
 
 /* Affichage */
 const hm=m=>`${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
 function imperial(d){const f=Math.round(d/201.168);const mi=Math.floor(f/8),fu=f%8;return (mi?mi+' mile'+(mi>1?'s':''):'')+(mi&&fu?' ':'')+(fu?fu+' f':'')}
-const distTxt=r=>`${r.d.toLocaleString('fr-FR')} m${(r.cty||'FR')!=='FR'?' ('+imperial(r.d)+')':''}`;
+const distTxt=r=>`${r.d.toLocaleString('fr-FR')} m${['GB','IE','US'].includes(r.cty)?' ('+imperial(r.d)+')':''}`;
 const flag=c=>`<span class="cty cty-${(c||'FR').toLowerCase()}">${CTY[c||'FR'].f}</span>`;
-const gbp=r=>r.cty==='GB'?` (≈ £${(Math.round(r.tot/G/100)*100).toLocaleString('fr-FR')})`:'';
+const usd=r=>r.cty==='US'?` (≈ $${(Math.round(r.tot/0.87/1000)*1000).toLocaleString('fr-FR')})`:'';
+const gbp=r=>r.cty==='US'?usd(r):r.cty==='GB'?` (≈ £${(Math.round(r.tot/G/100)*100).toLocaleString('fr-FR')})`:'';
 
 /* ===================== ILLUSTRATIONS ===================== */
 /* Portrait de cheval de profil (tête à droite), robe, marques, couverture aux couleurs de la casaque. */
@@ -2212,13 +2267,13 @@ function viewRaces(){
   <a class="equidia" href="https://www.equidia.fr" target="_blank" rel="noopener"><span class="live">● DIRECT</span><b>Equidia</b><small>Regarder les vraies courses du jour (site officiel, nouvel onglet)</small></a>
   ${S.entries.length?`<div class="panel"><span class="lbl" style="color:var(--gold)">Tes engagements</span>${S.entries.map((e,i)=>{const r=S.races[e.rid],h=H(e.hid);return `<div class="hl"><div><b>${esc(h.name)}</b> · ${esc(J(e.jk)?J(e.jk).n:'')}<br><span class="muted">${esc(r.n)} · ${r.t} · ${fd(r.date,{weekday:'short'})}${r.tm?' '+hm(r.tm):''}${e.tac&&e.tac!=='auto'?' · '+TACTICS[e.tac].toLowerCase():''}${e.blink?' · œillères':''}${e.stall&&!isJ(r)&&r.d<=1600?' · corde '+e.stall:''}</span></div><button class="x" aria-label="Retirer l'engagement" onclick="unenter(${i})">✕</button></div>`}).join('')}</div>`:''}
   <div class="days" role="tablist">${dayKeys.map(d=>`<button role="tab" aria-selected="${d===U.rday}" onclick="U.rday=${d};renderMain()">${dl(d)}<i>${cnt(d)}</i></button>`).join('')}</div>
-  <div class="opts filter">${[['all','Tous pays'],['FR','France'],['GB','Royaume-Uni'],['IE','Irlande']].map(([k,n])=>`<button class="opt" aria-pressed="${cf===k}" onclick="U.rcty='${k}';renderMain()">${n}</button>`).join('')}</div>
+  <div class="opts filter">${[['all','Tous pays'],['FR','France'],['GB','Royaume-Uni'],['IE','Irlande'],['DE','Allemagne'],['US','États-Unis']].map(([k,n])=>`<button class="opt" aria-pressed="${cf===k}" onclick="U.rcty='${k}';renderMain()">${n}</button>`).join('')}</div>
   <div class="opts filter">${[['all','Toutes'],['me','Pour mes chevaux'],['P','Plat'],['O','Obstacle'],['G','Groupes & Listed']].map(([k,n])=>`<button class="opt" aria-pressed="${f===k}" onclick="U.rfilter='${k}';renderMain()">${n}</button>`).join('')}</div>
   <span class="lbl">${fdl(U.rday)} · ${meets.length} réunion${meets.length>1?'s':''} · ${list.length} course${list.length>1?'s':''}</span>
   ${meets.length?meets.map(M=>{const hot=M.R.some(r=>r.feat||mine.has(r.id));const open=U.mopen[U.rday+M.k]!=null?U.mopen[U.rday+M.k]:(hot||f!=='all');const tms=M.R.map(r=>r.tm||0);const top=Math.max(...M.R.map(r=>r.tot));
     return `<details class="meet" ${open?'open':''} ontoggle="U.mopen[${U.rday}+'${M.k.replace(/'/g,"\\'")}']=this.open"><summary>${flag(M.c)}<span class="mt"><b>${esc(M.t)}</b>${M.c==='FR'&&M.reu?` <small class="reu">R${M.reu}</small>`:''}${hot?' <span class="feat">★</span>':''}<small>${disc(M)} · ${M.R.length} course${M.R.length>1?'s':''}${tms[0]?' · '+hm(Math.min(...tms))+'–'+hm(Math.max(...tms)):''}</small></span><span class="pz">${keur(top)}</span></summary>
-    <div class="panel tight">${M.R.map(r=>`<button class="race${mine.has(r.id)?' mine':''}" onclick="openRace(${r.id})"><div class="nm"><span class="cn">${M.c==='FR'?'C':''}${r.rn||''}</span>${pill(r)} ${esc(r.n)}${r.feat?' <span class="feat">★</span>':''}</div><div class="meta">${r.tm?hm(r.tm)+' · ':''}${discLab[r.disc]} ${distTxt(r)}${r.surf==='PSF'?' · PSF':' · '+r.going} · ${condTxt(r)}</div><div class="pz">${keur(r.tot)}</div></button>`).join('')}</div></details>`}).join(''):'<p class="muted">Aucune course ne correspond ce jour-là.</p>'}
-  <p class="small muted">Horaires en heure française. Au Royaume-Uni et en Irlande, l'engagement comprend le transport du cheval (${eur(TRAVEL.GB)} pour le Royaume-Uni, ${eur(TRAVEL.IE)} pour l'Irlande).</p>
+    <div class="panel tight">${M.R.map(r=>`<button class="race${mine.has(r.id)?' mine':''}" onclick="openRace(${r.id})"><div class="nm"><span class="cn">${M.c==='FR'?'C':''}${r.rn||''}</span>${pill(r)} ${esc(r.n)}${r.feat?' <span class="feat">★</span>':''}</div><div class="meta">${r.tm?hm(r.tm)+' · ':''}${discLab[r.disc]} ${distTxt(r)}${r.dirt?' · '+r.going:r.surf==='PSF'?' · PSF':' · '+r.going} · ${condTxt(r)}</div><div class="pz">${keur(r.tot)}</div></button>`).join('')}</div></details>`}).join(''):'<p class="muted">Aucune course ne correspond ce jour-là.</p>'}
+  <p class="small muted">Horaires en heure française. À l'étranger, l'engagement comprend le transport du cheval : ${eur(TRAVEL.GB)} pour le Royaume-Uni, ${eur(TRAVEL.IE)} pour l'Irlande, ${eur(TRAVEL.DE)} pour l'Allemagne, ${eur(TRAVEL.US)} pour les États-Unis (avion et quarantaine). Aux États-Unis, la plupart des courses se courent sur la terre (dirt).</p>
   <details class="panel"><summary class="lbl">Grandes courses à venir</summary>${upcomingFeats(20).map(({f,d})=>`<p class="rowp"><span>${flag(f.cty)} ${fd(d,{day:'numeric',month:'short',year:'numeric'})} · <b>${esc(f.n)}</b><small class="muted"> · ${f.t} · ${discLab[f.disc]} ${f.d} m · ${condTxt(f)}</small></span><b>${keur(f.tot)}</b></p>`).join('')}</details>
   ${nextWeekBtn()}`;
 }
@@ -2230,7 +2285,7 @@ function openRace(rid){setTimeout(()=>progUpd(rid),0);
   const ok=elig.filter(x=>!x.why);const pj=ok.length?prefJk(ok[0].h,r):null;
   const jks=jkChoice(r);
   openSheet(`${tag(`${fdl(r.date)}`)}<h2>${esc(r.n)}</h2>
-  <p>${flag(r.cty)} ${pill(r)} <b>${r.t}</b>${r.tm?' · '+(r.cty==='FR'&&r.reu?'R'+r.reu+'C'+r.rn+' · ':'')+hm(r.tm):''} · ${discLab[r.disc]} · ${distTxt(r)} · ${r.surf==='PSF'?'Piste en sable fibré':'Terrain '+r.going.toLowerCase()}</p>
+  <p>${flag(r.cty)} ${pill(r)} <b>${r.t}</b>${r.tm?' · '+(r.cty==='FR'&&r.reu?'R'+r.reu+'C'+r.rn+' · ':'')+hm(r.tm):''} · ${discLab[r.disc]} · ${distTxt(r)} · ${r.dirt?'Piste en terre (dirt), '+r.going.replace('Dirt ',''):r.surf==='PSF'?'Piste en sable fibré':'Terrain '+r.going.toLowerCase()}</p>
   <div class="panel"><dl class="kv"><dt>Conditions</dt><dd>${condTxt(r)}</dd><dt>Allocations</dt><dd>${eur(r.tot)}${gbp(r)}</dd><dt>Au gagnant</dt><dd>${eur(r.tot*SHARE[0])}</dd><dt>${(r.cty||'FR')!=='FR'?'Engagement et transport':'Engagement'}</dt><dd>${eur(r.fee)}</dd>${r.hold?`<dt>Tenant du titre</dt><dd>${esc(r.hold)}</dd>`:''}<dt>Niveau attendu</dt><dd>valeur ≈ ${kg(r.lvl)}</dd></dl></div>
   ${(()=>{const o=winOdds(r).sort((a,b)=>b.p-a.p);const F=ensureField(r);return `<div class="panel"><span class="lbl">Partants annoncés · ${F.length} adversaires</span>${o.slice(0,8).map((x,k)=>{const f=F.find(y=>y.name===x.k);return `<p class="rowp"><span>${k+1}. <b>${esc(f.name)}</b>${f.real?' <span class="pill l">réel</span>':''}<small class="muted"> · ${esc(f.jk)}${f.real&&f.real.note?' · '+esc(f.real.note):''}</small></span><b>${cote(x.p)}</b></p>`}).join('')}${o.length>8?`<p class="small muted">et ${o.length-8} autres partants plus loin dans les cotes.</p>`:''}<p class="small muted">Cotes calculées sur 500 courses simulées, sans tes chevaux.</p></div>`})()}
   ${ok.length?`<div class="panel"><label class="f"><span>Cheval</span><select id="eh" onchange="jkFor(${r.id});progUpd(${r.id})">${ok.map(x=>{return `<option value="${x.h.id}">${esc(x.h.name)}</option>`}).join('')}</select></label>
@@ -2634,7 +2689,7 @@ function viewTeam(){
   <div class="grid team-firsts">${fj('P')}${fj('O')}</div>
   ${retainWeek()?`<p class="small muted">Contrats de premier jockey : ${eur(retainWeek()*52/12)} par mois, prélevés chaque semaine.</p>`:''}
   <span class="lbl">Jockeys · ${dk==='P'?'plat':'obstacle'}</span>
-  <div class="opts filter">${[['FR','France'],['GB','Royaume-Uni'],['IE','Irlande']].map(([k,n])=>`<button class="opt" aria-pressed="${ck===k}" onclick="U.tmc='${k}';renderMain()">${n}</button>`).join('')}</div>
+  <div class="opts filter">${[['FR','France'],['GB','Royaume-Uni'],['IE','Irlande'],['DE','Allemagne'],['US','États-Unis']].map(([k,n])=>`<button class="opt" aria-pressed="${ck===k}" onclick="U.tmc='${k}';renderMain()">${n}</button>`).join('')}</div>
   <div class="panel tight">${JL.map(j=>{const att=S.horses.filter(h=>h.jk===j.id);return `<button class="race" onclick="openJockey('${j.id}')"><div class="nm">${esc(j.n)}${isRetained(j.id)?' <span class="pill l">1er jockey</span>':''}</div><div class="meta">${tStars(j.skill)}${j.c==='FR'?' · '+j.w+' victoires en 2026':''}${att.length?' · monte '+att.map(h=>esc(h.name)).join(', '):''}</div><div class="pz">${eur(j.fee)}<small class="muted"> /monte</small></div></button>`}).join('')}</div>
   <span class="lbl">Entraîneurs · ${dk==='P'?'plat':'obstacle'}</span>
   <div class="panel tight">${tr.map(t=>`<button class="race" onclick="openTrainer('${t.id}')"><div class="nm">${esc(t.n)}${mine(t.id)?` <span class="pill l">${mine(t.id)} cheva${mine(t.id)>1?'ux':'l'}</span>`:''}</div><div class="meta">${tStars(t.skill)}${t.d==='PO'?' · plat et obstacle':''}</div><div class="pz">${eur(t.fee)}<small class="muted"> /mois</small></div></button>`).join('')}</div>`;
