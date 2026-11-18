@@ -2790,24 +2790,28 @@ function delIrlNote(id,i){const h=H(id);h.irlNotes.splice(i,1);save();openIrl(id
    Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
    frais fixes de personnel, prestige d'éleveur sur les foals qui y naissent, revente possible. */
 const FARMS=[
- {id:'anjou',n:"Petite ferme en Anjou",reg:'Maine-et-Loire',ha:12,box:6,price:320000,staff:2500,per:220,prest:.01,txt:'Une petite structure simple, idéale pour quelques juments et des sauteurs.'},
- {id:'mayenne',n:"Ferme d'élevage en Mayenne",reg:'Mayenne',ha:18,box:8,price:550000,staff:3500,per:230,prest:.02,txt:'Bonnes herbes, terres d\'élevage de tradition. Parfait pour débuter.'},
- {id:'orne',n:"Haras dans l'Orne",reg:'Orne, près du Pin',ha:30,box:14,price:1200000,staff:6000,per:250,prest:.04,txt:'Au cœur du pays du cheval, avec une écurie de poulinage et des paddocks clôturés.'},
- {id:'auge',n:"Domaine dans le Pays d'Auge",reg:'Calvados',ha:45,box:20,price:2400000,staff:9000,per:250,prest:.06,txt:'Herbages normands réputés, près de Deauville et d\'Arqana. Une adresse que les acheteurs connaissent.'},
- {id:'newmarket',n:"Stud farm près de Newmarket",reg:'Suffolk, Angleterre',ha:40,box:18,price:3000000,staff:11000,per:300,prest:.07,txt:'À deux pas de Tattersalls et des pistes d\'entraînement de Newmarket.'},
- {id:'kildare',n:"Stud farm dans le Kildare",reg:'Comté de Kildare, Irlande',ha:60,box:25,price:3500000,staff:12000,per:280,prest:.08,txt:'Les meilleures terres d\'élevage d\'Irlande, près du Curragh et de Goffs.'},
+ {id:'anjou',land:11000,n:"Petite ferme en Anjou",reg:'Maine-et-Loire',ha:12,box:6,price:320000,staff:2500,per:220,prest:.01,txt:'Une petite structure simple, idéale pour quelques juments et des sauteurs.'},
+ {id:'mayenne',land:14000,n:"Ferme d'élevage en Mayenne",reg:'Mayenne',ha:18,box:8,price:550000,staff:3500,per:230,prest:.02,txt:'Bonnes herbes, terres d\'élevage de tradition. Parfait pour débuter.'},
+ {id:'orne',land:20000,n:"Haras dans l'Orne",reg:'Orne, près du Pin',ha:30,box:14,price:1200000,staff:6000,per:250,prest:.04,txt:'Au cœur du pays du cheval, avec une écurie de poulinage et des paddocks clôturés.'},
+ {id:'auge',land:35000,n:"Domaine dans le Pays d'Auge",reg:'Calvados',ha:45,box:20,price:2400000,staff:9000,per:250,prest:.06,txt:'Herbages normands réputés, près de Deauville et d\'Arqana. Une adresse que les acheteurs connaissent.'},
+ {id:'newmarket',land:45000,n:"Stud farm près de Newmarket",reg:'Suffolk, Angleterre',ha:40,box:18,price:3000000,staff:11000,per:300,prest:.07,txt:'À deux pas de Tattersalls et des pistes d\'entraînement de Newmarket.'},
+ {id:'kildare',land:40000,n:"Stud farm dans le Kildare",reg:'Comté de Kildare, Irlande',ha:60,box:25,price:3500000,staff:12000,per:280,prest:.08,txt:'Les meilleures terres d\'élevage d\'Irlande, près du Curragh et de Goffs.'},
 ];
 const farmOf=()=>S.farm&&FARMS.find(f=>f.id===S.farm.id);
 const atHome=h=>h.status!=='training'&&h.status!=='sold'&&h.status!=='lot';
 const homeHorses=()=>S.horses.filter(atHome).sort((a,b)=>a.id-b.id);
-const inFarm=h=>{const F=farmOf();if(!F||!atHome(h))return false;return homeHorses().slice(0,F.box).includes(h)};
-const farmValue=()=>{const F=farmOf();if(!F)return 0;const yrs=(now()-S.farm.since)/(365*DAY);return nice(S.farm.price*Math.pow(1.02,Math.max(0,yrs)))};
+const farmHa=()=>{const F=farmOf();return F?(S.farm.ha!=null?S.farm.ha:F.ha):0};
+const farmCap=()=>{const F=farmOf();return F?Math.min(F.box,Math.floor(farmHa())):0}; // 1 ha minimum par cheval
+const appre=()=>Math.pow(1.02,Math.max(0,(now()-S.farm.since)/(365*DAY)));
+const inFarm=h=>{const F=farmOf();if(!F||!atHome(h))return false;return homeHorses().slice(0,farmCap()).includes(h)};
+const farmValue=()=>{const F=farmOf();if(!F)return 0;return nice((S.farm.price+(farmHa()-F.ha)*F.land)*appre())};
 const farmBonus=h=>{const F=farmOf();return F&&h.bredAt&&h.bredAt===S.farm.name?1+F.prest:1};
 function farmPanel(){const F=farmOf();const hh=homeHorses();const pens=hh.length*750;
   if(!F)return `<div class="panel farm"><span class="lbl" style="color:var(--gold)">Ton domaine</span><p>Tes ${hh.length||''} chevaux hors entraînement sont en pension chez d'autres${hh.length?`, pour ${eur(pens)} par mois au total`:''} (750 € par mois et par cheval).</p><p class="small muted">Achète ton propre haras : la pension coûte moins cher, tu paies le personnel, et les foals nés chez toi portent ton nom d'éleveur, ce qui les valorise en vente. Tu peux aussi louer tes boxes libres à d'autres propriétaires.</p><button class="btn" onclick="openFarms()">Voir les domaines à vendre</button></div>`;
-  const n=Math.min(hh.length,F.box),over=Math.max(0,hh.length-F.box);
-  return `<div class="panel farm own"><span class="lbl" style="color:var(--gold)">Ton domaine</span><h3>${esc(S.farm.name)}</h3><p class="small muted">${esc(F.n)} · ${esc(F.reg)} · ${F.ha} ha</p>
-   <dl class="kv"><dt>Boxes occupés</dt><dd>${n} / ${F.box}${over?` · <span class="neg">${over} en pension ailleurs</span>`:''}</dd><dt>Coût par mois</dt><dd>${eur(F.staff+n*F.per+over*750)} <small class="muted">(personnel ${eur(F.staff)} + ${eur(F.per)} par cheval)</small></dd><dt>Chevaux extérieurs</dt><dd>${S.farm.board===false?'Non':(S.farm.guests||0)+' en pension chez toi'} <small class="muted">(${eur(BOARD_IN)}/mois chacun, dans les boxes libres)</small> <button class="link" onclick="S.farm.board=S.farm.board===false;save();renderMain()">${S.farm.board===false?'Accepter':'Refuser'}</button></dd><dt>Valeur du domaine</dt><dd>${eur(farmValue())}</dd><dt>Prestige d'éleveur</dt><dd>+${Math.round(F.prest*100)} % sur la valeur des foals et yearlings nés chez toi</dd></dl>
+  const cap=farmCap(),n=Math.min(hh.length,cap),over=Math.max(0,hh.length-cap);
+  return `<div class="panel farm own"><span class="lbl" style="color:var(--gold)">Ton domaine</span><h3>${esc(S.farm.name)}</h3><p class="small muted">${esc(F.n)} · ${esc(F.reg)}</p>
+   <dl class="kv"><dt>Surface</dt><dd>${String(farmHa()).replace('.',',')} ha <small class="muted">(terres à ${eur(Math.round(F.land*appre()))}/ha)</small></dd><dt>Places</dt><dd>${n} / ${cap}${cap<F.box?` <small class="muted">(${F.box} boxes, mais 1 ha minimum par cheval)</small>`:''}${over?` · <span class="neg">${over} en pension ailleurs</span>`:''}</dd><dt>Coût par mois</dt><dd>${eur(F.staff+n*F.per+over*750)} <small class="muted">(personnel ${eur(F.staff)} + ${eur(F.per)} par cheval)</small></dd><dt>Chevaux extérieurs</dt><dd>${S.farm.board===false?'Non':(S.farm.guests||0)+' en pension chez toi'} <small class="muted">(${eur(BOARD_IN)}/mois chacun, dans les boxes libres)</small> <button class="link" onclick="S.farm.board=S.farm.board===false;save();renderMain()">${S.farm.board===false?'Accepter':'Refuser'}</button></dd><dt>Valeur du domaine</dt><dd>${eur(farmValue())}</dd><dt>Prestige d'éleveur</dt><dd>+${Math.round(F.prest*100)} % sur la valeur des foals et yearlings nés chez toi</dd></dl>
+   <div class="row"><button class="btn ghost" onclick="sellLand()">Vendre des terres</button><button class="btn ghost" onclick="buyLand()">Acheter des terres</button></div>
    <div class="row"><button class="btn ghost" onclick="renameFarm()">Renommer</button><button class="btn ghost" onclick="sellFarm()">Vendre le domaine</button></div></div>`}
 function openFarms(){const hh=homeHorses();const now_=hh.length*750;
   openSheet(`${tag('Immobilier')}<h2>Domaines à vendre</h2><p class="small muted">Prix et charges inspirés du marché des haras en 2026. Aujourd'hui, ta pension coûte ${eur(now_)} par mois pour ${hh.length} cheva${hh.length>1?'ux':'l'}.</p>
@@ -2823,8 +2827,20 @@ function sellFarm(){const v=farmValue(),net=nice(v*.92);if(!confirm(`Vendre ${S.
   addLog(`Vente du domaine · ${S.farm.name}`,net,'ventes');news(`${S.farm.name} est vendu ${eur(v)}.`,'sale');S.farm=null;save();renderMain()}
 const BOARD_IN=650; // ce que paient les propriétaires extérieurs, par mois et par box
 function farmWeek(){const F=farmOf();if(!F)return;addLog(`Personnel et entretien · ${S.farm.name}`,-Math.round(F.staff*12/52),'pension');
-  const free=Math.max(0,F.box-homeHorses().length);if(S.farm.board===false||!free)return;const n=Math.round(free*(.45+Math.random()*.35));S.farm.guests=n;
+  const free=Math.max(0,farmCap()-homeHorses().length);if(S.farm.board===false||!free)return;const n=Math.round(free*(.45+Math.random()*.35));S.farm.guests=n;
   if(n)addLog(`Pensions de ${n} chevaux extérieurs · ${S.farm.name}`,Math.round(n*BOARD_IN*12/52),'pension')}
+
+function sellLand(){const F=farmOf(),ha=farmHa(),max=Math.floor(ha-3);if(max<1)return alertMsg('Il faut garder au moins 3 ha.');const p=Math.round(F.land*appre());
+  const v=parseFloat(String(prompt(`Combien d'hectares vendre ? (1 à ${max}, terres à ${eur(p)}/ha, frais de notaire et d'agence 5 %)`,Math.min(10,max))||'').replace(',','.'));
+  if(!(v>0))return;if(v>max)return alertMsg(`Tu peux vendre ${max} ha au maximum (il faut garder au moins 3 ha).`);
+  const net=nice(v*p*.95);const left=ha-v;const hh=homeHorses().length;
+  if(!confirm(`Vendre ${String(v).replace('.',',')} ha pour ${eur(net)} net ? Il te restera ${String(left).replace('.',',')} ha${hh>Math.min(F.box,Math.floor(left))?`, soit ${Math.min(F.box,Math.floor(left))} places : tes chevaux en trop partiront en pension (750 €/mois)`:''}.`))return;
+  S.farm.ha=left;addLog(`Vente de ${String(v).replace('.',',')} ha · ${S.farm.name}`,net,'ventes');news(`Tu as vendu ${String(v).replace('.',',')} ha du ${S.farm.name} pour ${eur(net)}.`,'sale');save();renderMain()}
+function buyLand(){const F=farmOf();const p=Math.round(F.land*appre()*1.05);
+  const v=parseFloat(String(prompt(`Combien d'hectares acheter ? (${eur(p)}/ha, frais compris)`,'5')||'').replace(',','.'));
+  if(!(v>0))return;const cost=nice(v*p);if(cost>S.cash)return alertMsg(`Il faut ${eur(cost)} : trésorerie insuffisante.`);
+  if(!confirm(`Acheter ${String(v).replace('.',',')} ha pour ${eur(cost)} ?`))return;
+  S.farm.ha=farmHa()+v;addLog(`Achat de ${String(v).replace('.',',')} ha · ${S.farm.name}`,-cost,'achats');save();renderMain()}
 
 </script>
 
