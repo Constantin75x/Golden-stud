@@ -449,6 +449,8 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .panel.farm.own{border-color:rgba(245,197,66,.45)}
 .farmcard{cursor:default;gap:6px;margin-bottom:10px}
 .farmcard .btn{margin-top:6px}
+.panel.farm .land{margin:12px 0 4px;padding-top:10px;border-top:1px solid var(--line)}
+.panel.farm .land .hl .btn{width:auto;margin:0;padding:8px 10px;font-size:.85rem;white-space:nowrap}
 </style>
 </head><body>
 <div id="app"></div>
@@ -2834,7 +2836,8 @@ function farmPanel(){const F=farmOf();const hh=homeHorses();const pens=hh.length
   const cap=farmCap(),n=Math.min(hh.length,cap),over=Math.max(0,hh.length-cap);
   return `<div class="panel farm own"><span class="lbl" style="color:var(--gold)">Ton domaine</span><h3>${esc(S.farm.name)}</h3><p class="small muted">${esc(F.n)} · ${esc(F.reg)}</p>
    <dl class="kv"><dt>Surface</dt><dd>${String(farmHa()).replace('.',',')} ha <small class="muted">(terres à ${eur(Math.round(F.land*appre()))}/ha)</small></dd><dt>Places</dt><dd>${n} / ${cap}${cap<F.box?` <small class="muted">(${F.box} boxes, mais 1 ha minimum par cheval)</small>`:''}${over?` · <span class="neg">${over} en pension ailleurs</span>`:''}</dd><dt>Coût par mois</dt><dd>${eur(F.staff+n*F.per+over*750)} <small class="muted">(entretien ${eur(F.staff)} + ${eur(F.per)} par cheval, soins et personnel compris)</small></dd><dt>Économie</dt><dd class="${n*750-(F.staff+n*F.per)>=0?'pos':'neg'}">${eur(n*750-(F.staff+n*F.per))} par mois par rapport à la pension</dd><dt>Marché immobilier</dt><dd class="${appre()>=1?'pos':'neg'}">${appre()>=1?'+':''}${String(Math.round((appre()-1)*1000)/10).replace('.',',')} % depuis ton achat</dd><dt>Chevaux extérieurs</dt><dd>${S.farm.board===false?'Non':(S.farm.guests||0)+' en pension chez toi'} <small class="muted">(ils te paient ${eur(BOARD_IN)}/mois, il te reste ${eur(guestNet(F))} par cheval)</small> <button class="link" onclick="S.farm.board=S.farm.board===false;save();renderMain()">${S.farm.board===false?'Accepter':'Refuser'}</button></dd><dt>Valeur du domaine</dt><dd>${eur(farmValue())}</dd><dt>Prestige d'éleveur</dt><dd>+${Math.round(F.prest*100)} % sur la valeur des foals et yearlings nés chez toi</dd><dt>Qualité d'élevage</dt><dd>${'★'.repeat(Math.round(F.q*5))}${'☆'.repeat(5-Math.round(F.q*5))} · tes jeunes élevés ici gagnent jusqu'à +${String(raiseCap(F)).replace('.',',')} points de potentiel, une meilleure santé et un meilleur mental${(()=>{const y=S.horses.filter(h=>inFarm(h)&&ageAt(h)<=2&&h.fb>0);return y.length?`<br><small class="muted">${y.map(h=>`${esc(disp(h))} +${String(Math.round(h.fb*10)/10).replace('.',',')}`).join(' · ')}</small>`:''})()}</dd></dl>
-   <div class="row"><button class="btn ghost" onclick="sellLand()">Vendre des terres</button><button class="btn ghost" onclick="buyLand()">Acheter des terres</button></div>
+   ${landPanel()}
+   <div class="row"><button class="btn ghost" onclick="buildBoxes()">Construire des boxes</button><button class="btn ghost" onclick="sellLand()">Vendre des terres</button></div>
    <div class="row"><button class="btn ghost" onclick="renameFarm()">Renommer</button><button class="btn ghost" onclick="sellFarm()">Vendre le domaine</button></div></div>`}
 function openFarms(){const hh=homeHorses();const now_=hh.length*750;const rf=U.freg||'all';const ads=farmAds();const regs=[...new Set(ads.map(a=>a.reg))];
   openSheet(`${tag('Immobilier')}<h2>Domaines à vendre</h2><p class="small muted">${ads.length} annonces dans ${regs.length} régions, renouvelées toutes les 8 semaines. Prix calés sur le prix des terres et les annonces de haras en 2025-2026 : ce sont des estimations, pas de vraies annonces. Aujourd'hui, ta pension coûte ${eur(now_)} par mois pour ${hh.length} cheva${hh.length>1?'ux':'l'}.</p>
@@ -2874,6 +2877,22 @@ function buyLand(){const F=farmOf();const p=Math.round(F.land*appre()*1.05);
   if(!(v>0))return;const cost=nice(v*p);if(cost>S.cash)return alertMsg(`Il faut ${eur(cost)} : trésorerie insuffisante.`);
   if(!confirm(`Acheter ${String(v).replace('.',',')} ha pour ${eur(cost)} ?`))return;
   S.farm.ha=farmHa()+v;addLog(`Achat de ${String(v).replace('.',',')} ha · ${S.farm.name}`,-cost,'achats');save();renderMain()}
+
+/* Champs à vendre autour du domaine : renouvelés toutes les 4 semaines */
+const LKIND=[['Herbage clôturé',1.15,0,'prêt à accueillir des chevaux'],['Prairie naturelle',1,600,'clôtures à poser'],['Terre de culture',.85,1800,'à remettre en herbe et à clôturer'],['Pré avec abri',1.25,0,'avec un abri et un point d\'eau']];
+function landAds(){const F=farmOf();if(!F)return [];if(!S.landAds||S.week-(S.landAds.w||0)>=4){S.landAds={w:S.week,L:Array.from({length:3+rint(3)},(_,i)=>{const k=pick(LKIND);const ha=pick([2,3,4,5,6,8,10,12,15,20,25,30]);
+  return {id:'l'+S.week+'_'+i,ha,kind:k[0],note:k[3],ppha:Math.round(F.land*k[1]*rand(.85,1.2)/10)*10,work:k[2],dist:pick([0,0,1,2,3,5])}}).sort((a,b)=>a.ha-b.ha)}}return S.landAds.L}
+const landCost=a=>nice(a.ha*(Math.round(a.ppha*appre())+a.work)*1.05);
+function landPanel(){const L=landAds();return `<div class="land"><span class="lbl">Champs à vendre autour du domaine</span>${L.length?L.map(a=>`<div class="hl"><div><b>${String(a.ha).replace('.',',')} ha · ${a.kind}</b><br><span class="muted small">${a.dist?a.dist+' km':'Attenant au domaine'} · ${eur(Math.round(a.ppha*appre()))}/ha · ${a.note}${a.work?` (+${eur(a.work)}/ha de travaux)`:''}</span></div><button class="btn ghost" ${S.cash<landCost(a)?'disabled':''} onclick="buyLandAd('${a.id}')">${eur(landCost(a))}</button></div>`).join(''):'<p class="small muted">Aucun champ à vendre pour l\'instant.</p>'}<p class="small muted">Prix frais de notaire compris. De nouveaux champs se libèrent toutes les 4 semaines.</p></div>`}
+function buyLandAd(id){const a=(S.landAds.L||[]).find(x=>x.id===id);if(!a)return;const c=landCost(a);if(c>S.cash)return alertMsg('Trésorerie insuffisante.');
+  if(!confirm(`Acheter ${String(a.ha).replace('.',',')} ha (${a.kind.toLowerCase()}) pour ${eur(c)} ?`))return;
+  S.farm.ha=farmHa()+a.ha;S.landAds.L=S.landAds.L.filter(x=>x!==a);addLog(`Achat de ${String(a.ha).replace('.',',')} ha (${a.kind.toLowerCase()}) · ${S.farm.name}`,-c,'achats');news(`${S.farm.name} s'agrandit : +${String(a.ha).replace('.',',')} ha.`,'sale');save();renderMain()}
+const BOX_COST=9000;
+function buildBoxes(){const F=farmOf();const room=Math.max(0,Math.floor(farmHa())-F.box);
+  const v=parseInt(prompt(`Combien de boxes construire ? (${eur(BOX_COST)} le box, + 25 € par mois d'entretien chacun). Tu as la place pour ${room} box${room>1?'es':''} de plus avec ${String(farmHa()).replace('.',',')} ha (1 ha par cheval).`,Math.min(4,Math.max(1,room)))||'',10);
+  if(!(v>0))return;if(v>room)return alertMsg(`Pas assez de terres : achète d'abord des champs (1 ha par cheval).`);const c=v*BOX_COST;if(c>S.cash)return alertMsg('Trésorerie insuffisante.');
+  if(!S.farm.def)S.farm.def=Object.assign({},F);S.farm.def.box+=v;S.farm.def.staff+=25*v;S.farm.price+=c*.8;
+  addLog(`Construction de ${v} boxes · ${S.farm.name}`,-c,'achats');news(`${v} nouveaux boxes au ${S.farm.name}.`,'sale');save();renderMain()}
 
 </script>
 
