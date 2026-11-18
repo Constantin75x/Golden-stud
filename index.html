@@ -451,6 +451,7 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .farmcard .btn{margin-top:6px}
 .panel.farm .land{margin:12px 0 4px;padding-top:10px;border-top:1px solid var(--line)}
 .panel.farm .land .hl .btn{width:auto;margin:0;padding:8px 10px;font-size:.85rem;white-space:nowrap}
+.btn.ghost.danger{color:#ff8a80;border-color:rgba(255,138,128,.5)}
 </style>
 </head><body>
 <div id="app"></div>
@@ -2208,7 +2209,7 @@ function openHorse(id){
   if(h.broken===false)pref.push(['Débourrage',`${h.brk||0} semaines sur 6`]);
   const sk=sellKind(h);
   const upcoming=salesAround().filter(x=>x.s.sell.includes(sk)&&x.d>sunday()).slice(0,4);
-  let actions='';ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
+  let actions='';{const L=lotOfHorse(h);if(L)actions+=cancelBtn(L)}ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
   if(h.status==='training'||h.status==='repos'){
     actions+=`<label class="f"><span>Entraîneur</span>${trainerSelect(h,'trs')}</label><button class="btn ghost" onclick="setTrainer(${h.id})">${h.status==='repos'?'Remettre à l\'entraînement':'Changer d\'entraîneur'}</button>`;
     if(h.status==='training')actions+=`<button class="btn ghost" onclick="setStatus(${h.id},'repos')">Mettre au repos au haras</button>`;
@@ -2421,7 +2422,7 @@ function viewCatalogue(key){
 function openLot(key,no){
   const l=S.lots[key].find(x=>x.no===no),h=l.h,live=thisWeekSale(key),real=isReal(key);
   let act='';
-  if(l.status==='mine')act=`<p class="pos">Ce lot est à toi${l.real?` : adjugé ${eur(l.real.prixReel)}${l.real.acheteurReel?' à '+esc(l.real.acheteurReel):''}, payé ${eur(l.price)}`:` pour ${eur(l.price)}`}.</p>${l.real?`<details class="small"><summary>Corriger le prix d'adjudication</summary><div class="declrow"><input id="fp" inputmode="numeric" value="${l.real.prixReel}" aria-label="Prix d'adjudication corrigé"><button class="btn ghost" onclick="fixDeclared('${key}',${no},$('#fp').value)">Corriger</button></div></details>`:''}`;
+  if(l.status==='mine')act=cancelBtn(l)+`<p class="pos">Ce lot est à toi${l.real?` : adjugé ${eur(l.real.prixReel)}${l.real.acheteurReel?' à '+esc(l.real.acheteurReel):''}, payé ${eur(l.price)}`:` pour ${eur(l.price)}`}.</p>${l.real?`<details class="small"><summary>Corriger le prix d'adjudication</summary><div class="declrow"><input id="fp" inputmode="numeric" value="${l.real.prixReel}" aria-label="Prix d'adjudication corrigé"><button class="btn ghost" onclick="fixDeclared('${key}',${no},$('#fp').value)">Corriger</button></div></details>`:''}`;
   else if(l.status)act=`<p class="muted">${l.status==='sold'?`Adjugé ${eur(l.price)} à ${esc(l.buyer)}.`:'Ravalé.'}</p>`;
   else{
     act+=h.insp?'':`<button class="btn ghost" onclick="inspect('${key}',${no})">Visite vétérinaire et radios (750 €)</button>`;
@@ -2447,10 +2448,10 @@ function hammerPrice(l){
 }
 function buySim(key,no){const l=S.lots[key].find(x=>x.no===no);const p=hammerPrice(l);
   confirmBox(`Acheter le lot ${lot3(no)} pour <b>${eur(p.price+PREMIUM)}</b> (${eur(p.price)} + 1 000 €) ?`,'Acheter',()=>{l.status='mine';l.price=p.price+PREMIUM;const h=buyLot(l,`Achat · lot ${lot3(no)} · ${saleInfo(key).s.n}`);save();afterBuy(h)})}
-function buyLot(l,label){const h=l.h;h.price=l.price;addLog(label||`Achat · ${lotTitle(l)} (lot ${l.no})`,-l.price,'achats');
+function buyLot(l,label){const h=l.h;h.price=l.price;const prevStatus=l.status==='mine'?null:l.status;addLog(label||`Achat · ${lotTitle(l)} (lot ${l.no})`,-l.price,'achats');
   h.status=l.kind==='J'?'broodmare':l.kind==='F'||l.kind==='Y'||l.kind==='YE'||l.kind==='YO'?'haras':'repos';if(!h.name&&h.yname)h.name=h.yname;
   if(h.status==='broodmare'&&!h.name)h.name=h.dam+' II';
-  delete h.gn;h.id=S.nid++;S.horses.push(h);l.h={...h};
+  delete h.gn;h.id=S.nid++;S.horses.push(h);l.h={...h};l.buy={t:Date.now(),hid:h.id,paid:l.price,wk:S.week,runs:(h.runs||0)+(h.jruns||0)};
   news(`Achat : ${disp(h)}${h.name?` (${h.sire} × ${h.dam})`:''} pour ${eur(l.price)}.`,'sale');
   return h;}
 function afterBuy(h){
@@ -2485,11 +2486,11 @@ function declareBuy(key,no,price){no=parseInt(no,10);const p=parseEur(price);
 function confirmDeclare(key,no,p){const id=`joueur-${key}-${no}`;S.applied=(S.applied||[]).filter(x=>x!==id);
   REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push({_id:id,vente:key,lot:no,prixReel:p,decl:true});closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
 function fixDeclared(key,no,price){const l=S.lots[key].find(x=>x.no===no);const p=parseEur(price);if(!l||!l.real||!(p>=500))return alertMsg('Prix invalide.');
-  const old=l.price,nw=p+PREMIUM,d=nw-old;if(!d)return closeSheet();S.cash-=d;addLog(`Correction du prix · lot ${lot3(no)}`,-d,'achats');l.price=nw;l.real.prixReel=p;const h=S.horses.find(x=>x.origin&&x.origin.endsWith('lot '+lot3(no))&&x.price===old);if(h)h.price=nw;save();closeSheet();alertMsg('Prix corrigé.')}
+  const old=l.price,nw=p+PREMIUM,d=nw-old;if(!d)return closeSheet();if(l.buy)l.buy.paid=nw;addLog(`Correction du prix · lot ${lot3(no)}`,-d,'achats');l.price=nw;l.real.prixReel=p;const h=S.horses.find(x=>x.origin&&x.origin.endsWith('lot '+lot3(no))&&x.price===old);if(h)h.price=nw;save();closeSheet();alertMsg('Prix corrigé.')}
 function applyReal(){
   if(!S||!REAL.ready)return;S.applied=S.applied||[];let n=0;
   const bought=[];REAL.docs.forEach(d=>{
-    if(S.applied.includes(d._id)||!d.vente||!d.lot||!d.prixReel)return;
+    if(S.applied.includes(d._id)||(S.cancelled||[]).includes(d._id)||!d.vente||!d.lot||!d.prixReel)return;
     const key=d.vente;const kind=TYPE2KIND[d.type]||'T';
     let l=S.lots[key]&&S.lots[key].find(x=>x.no===+d.lot);
     if(!l){S.lots[key]=S.lots[key]||[];const h=horseFromDoc(d,kind);l=lotFromHorse(h,+d.lot,d.vendeur||'',kind,key);S.lots[key].push(l);S.lots[key].sort((a,b)=>a.no-b.no)}
@@ -2500,7 +2501,7 @@ function applyReal(){
     h.origin=`Arqana ${saleInfo(key).s.n} ${saleInfo(key).y} · lot ${lot3(d.lot)}`;
     const paid=d.prixPaye||d.prixReel+PREMIUM;
     l.status='mine';l.price=paid;l.real={prixReel:d.prixReel,acheteurReel:d.acheteurReel||''};
-    const nh=buyLot(l,`Achat · lot ${lot3(d.lot)} · ${saleInfo(key).s.n} (adjugé ${eur(d.prixReel)} + 1 000 €)`);
+    const nh=buyLot(l,`Achat · lot ${lot3(d.lot)} · ${saleInfo(key).s.n} (adjugé ${eur(d.prixReel)} + 1 000 €)`);l.buy.doc=d._id;
     if(nh.status==='repos'&&d.entraineur&&T(d.entraineur)){nh.trainer=d.entraineur;nh.status='training'}nh.irl={key,lot:+d.lot,prix:d.prixReel};
     S.wish=(S.wish||[]).filter(k=>k!==wishKey(key,+d.lot));
     S.applied.push(d._id);n++;bought.push({no:+d.lot,kind:l.kind,sale:saleInfo(key).s.n,house:saleInfo(key).s.h+' · '+saleInfo(key).s.t,name:nh.name||`${nh.sire} × ${nh.dam}`,sub:`${KINDLAB[l.kind]||''} · par ${nh.sire}`,price:paid});
@@ -2787,6 +2788,21 @@ function openIrl(id){const h=H(id);if(!h||!h.irl)return;const N=irlNews(h);
 function saveIrl(id){const h=H(id);h.irlTr=$('#irlTr').value.trim();h.irlGoal=$('#irlGoal').value.trim();save();alertMsg('Enregistré.');renderMain()}
 function addIrlNote(id){const h=H(id);const t=$('#irlNote').value.trim();if(!t)return alertMsg('Écris la nouvelle d\'abord.');(h.irlNotes=h.irlNotes||[]).push({d:Date.now(),t});save();openIrl(id);renderMain()}
 function delIrlNote(id,i){const h=H(id);h.irlNotes.splice(i,1);save();openIrl(id);renderMain()}
+
+/* Annuler un achat : possible pendant 24 heures (heure réelle), tant que le cheval n'a pas couru pour toi */
+const CANCEL_MS=24*3600*1000;
+const lotOfHorse=h=>{for(const k in S.lots||{}){const l=(S.lots[k]||[]).find(x=>x.status==='mine'&&x.buy&&x.buy.hid===h.id);if(l)return l}return null};
+const canCancel=l=>{if(!l||!l.buy||l.status!=='mine')return false;if(Date.now()-l.buy.t>CANCEL_MS)return false;const h=H(l.buy.hid);if(!h)return false;
+  return ((h.runs||0)+(h.jruns||0))===(l.buy.runs||0)};
+function cancelBtn(l){if(!canCancel(l))return '';const left=Math.max(1,Math.ceil((CANCEL_MS-(Date.now()-l.buy.t))/3600000));
+  return `<button class="btn ghost danger" onclick="cancelBuy('${l.key}',${l.no})">Annuler l'achat (encore ${left} h)</button>`}
+function cancelBuy(key,no){const l=S.lots[key].find(x=>x.no===no);if(!canCancel(l))return alertMsg('Ce n\'est plus possible : le délai de 24 heures est passé ou le cheval a déjà couru.');
+  const h=H(l.buy.hid);if(!confirm(`Annuler l'achat de ${disp(h)} ? Tu récupères ${eur(l.buy.paid)} et le cheval quitte ton écurie.`))return;
+  addLog(`Annulation d'achat · lot ${lot3(no)} · ${saleInfo(key).s.n}`,l.buy.paid,'achats');
+  S.horses=S.horses.filter(x=>x!==h);S.entries=(S.entries||[]).filter(e=>e.hid!==h.id);
+  const doc=l.buy.doc;if(doc){S.applied=(S.applied||[]).filter(x=>x!==doc);REAL.docs=REAL.docs.filter(d=>d._id!==doc||!/^joueur-/.test(doc));if(!/^joueur-/.test(doc))(S.cancelled=S.cancelled||[]).push(doc)}
+  l.status=null;l.price=0;delete l.real;delete l.buy;l.h=Object.assign({},l.h,{status:'lot'});
+  news(`Achat annulé : ${disp(h)} (lot ${lot3(no)}).`,'sale');save();closeSheet(true);renderMain();alertMsg('Achat annulé, tu as été remboursé.')}
 
 /* ===================== TON PROPRE HARAS =====================
    Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
