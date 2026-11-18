@@ -782,7 +782,13 @@ function goingLabel(g){return g<-.35?'Terrain bon / léger':g<.2?'Terrain indiff
 
 /* ---------- Valeur marchande ---------- */
 function pedValue(h){const d=h.g.dq+(h.dqn||0);return 7000*Math.pow(1.8,sireT(h.sire))*Math.exp((d-85)/12)*(1+((h.gn||0)+(h.g.pot-((86+sireT(h.sire)*6.5+h.g.dq)/2)))*0.01)}
-function mkt(h,d){
+/* Valeur marchande : le modèle (origines, âge, performances) est ancré sur le prix réellement payé à l'achat.
+   L'ancre pèse lourd au début puis s'efface avec le temps et surtout quand le cheval a montré son niveau en course. */
+function mkt(h,d){const m=mktModel(h,d);if(!h||!h.anchor||h.status==='lot')return m;const A=h.anchor;
+  if(!A.m0)A.m0=m;const weeks=Math.max(0,((d||sunday())-A.d)/(7*DAY));const raced=Math.max(h.OR||0,h.ORj||0)>0;
+  const w=Math.exp(-weeks/(raced?26:78))*(raced?.5:1);const ratio=clamp(A.v/Math.max(1,A.m0),.2,40);
+  return m*(1+(ratio-1)*w)}
+function mktModel(h,d){
   d=d||sunday();const age=ageAt(h,d);
   if(h.status==='stallion')return Math.max(30000,h.fee*55);
   if(h.status==='broodmare'||(h.sex==='F'&&age>=5&&h.status!=='training')){
@@ -2095,7 +2101,7 @@ function renderTitle(){
       <button class="link" onclick="openTransfer(true)">Importer une partie</button>
     </div></div>`;
 }
-function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();save();applyReal();go(render)}
+function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();save();applyReal();go(render)}
 
 /* ---------- Création ---------- */
 function renderSetup(){
@@ -2451,7 +2457,7 @@ function buySim(key,no){const l=S.lots[key].find(x=>x.no===no);const p=hammerPri
 function buyLot(l,label){const h=l.h;h.price=l.price;const prevStatus=l.status==='mine'?null:l.status;addLog(label||`Achat · ${lotTitle(l)} (lot ${l.no})`,-l.price,'achats');
   h.status=l.kind==='J'?'broodmare':l.kind==='F'||l.kind==='Y'||l.kind==='YE'||l.kind==='YO'?'haras':'repos';if(!h.name&&h.yname)h.name=h.yname;
   if(h.status==='broodmare'&&!h.name)h.name=h.dam+' II';
-  delete h.gn;h.id=S.nid++;S.horses.push(h);l.h={...h};l.buy={t:Date.now(),hid:h.id,paid:l.price,wk:S.week,runs:(h.runs||0)+(h.jruns||0)};
+  delete h.gn;h.id=S.nid++;S.horses.push(h);l.h={...h};h.anchor={v:Math.max(1000,l.price-PREMIUM),d:sunday().getTime(),m0:mktModel(h)};l.buy={t:Date.now(),hid:h.id,paid:l.price,wk:S.week,runs:(h.runs||0)+(h.jruns||0)};
   news(`Achat : ${disp(h)}${h.name?` (${h.sire} × ${h.dam})`:''} pour ${eur(l.price)}.`,'sale');
   return h;}
 function afterBuy(h){
@@ -2803,6 +2809,9 @@ function cancelBuy(key,no){const l=S.lots[key].find(x=>x.no===no);if(!canCancel(
   const doc=l.buy.doc;if(doc){S.applied=(S.applied||[]).filter(x=>x!==doc);REAL.docs=REAL.docs.filter(d=>d._id!==doc||!/^joueur-/.test(doc));if(!/^joueur-/.test(doc))(S.cancelled=S.cancelled||[]).push(doc)}
   l.status=null;l.price=0;delete l.real;delete l.buy;l.h=Object.assign({},l.h,{status:'lot'});
   news(`Achat annulé : ${disp(h)} (lot ${lot3(no)}).`,'sale');save();closeSheet(true);renderMain();alertMsg('Achat annulé, tu as été remboursé.')}
+
+/* Parties en cours : ancre les chevaux déjà achetés sur leur prix d'achat */
+function anchorOld(){(S.horses||[]).forEach(h=>{if(h.anchor||!h.price||!/lot/.test(h.origin||''))return;h.anchor={v:Math.max(1000,h.price-PREMIUM),d:sunday().getTime(),m0:mktModel(h)}})}
 
 /* ===================== TON PROPRE HARAS =====================
    Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
