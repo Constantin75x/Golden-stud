@@ -444,6 +444,11 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .h-arqana{background:#7a1f2b;color:#fff}
 .h-tattersalls{background:#1d3b2a;color:#e9d9a6;border:1px solid #e9d9a6}
 .h-goffs{background:#0f4c5c;color:#fff}
+/* Ton domaine */
+.panel.farm h3{margin:2px 0 0;font-size:1.25rem}
+.panel.farm.own{border-color:rgba(245,197,66,.45)}
+.farmcard{cursor:default;gap:6px;margin-bottom:10px}
+.farmcard .btn{margin-top:6px}
 </style>
 </head><body>
 <div id="app"></div>
@@ -783,7 +788,7 @@ function mkt(h,d){
     v*=age>14?.35:age>11?.6:1;if(h.preg)v+=feeOf(h.preg.sire)*1.15;return Math.max(2500,v);
   }
   const r=Math.max(h.OR||0,h.ORj||0);
-  if(!r){const k=age<=0?.75:age===1?1:age===2?(h.runs?.6:1.05):.45;return Math.max(3000,pedValue(h)*k)}
+  if(!r){const k=age<=0?.75:age===1?1:age===2?(h.runs?.6:1.05):.45;return Math.max(3000,pedValue(h)*k*(age<=1?farmBonus(h):1))}
   let v=3500*Math.exp((r-60)/11);
   if(h.bt>=2)v*=1.3+(h.bt-2)*.25;
   if(h.sex==='M'&&h.bt>=6&&age<=5)v*=2.2;
@@ -1159,6 +1164,7 @@ function stallionBook(h){
 /* ---------- Semaine ---------- */
 function weekCost(h){
   if(h.status==='training'){const t=T(h.trainer);return (t?t.fee:2000)*12/52}
+  const F=typeof farmOf==='function'&&farmOf();if(F&&inFarm(h))return F.per*12/52;
   if(h.status==='stallion')return 3000*12/52;
   return 750*12/52;
 }
@@ -1171,7 +1177,7 @@ function advanceWeek(){
   pruneLots();
   S.races.forEach(r=>{if(S.entries.some(e=>e.rid===r.id)){const res=runRace(r);applyResult(res);results.push(res)}});
   resolveSales();
-  let pens=0;S.horses.forEach(h=>pens+=weekCost(h));if(pens)addLog('Pensions de la semaine (entraînement, haras)',-pens,'pension');{const rw=retainWeek();if(rw)addLog('Contrats de premier jockey',-rw,'courses')}
+  let pens=0;S.horses.forEach(h=>pens+=weekCost(h));if(pens)addLog('Pensions de la semaine (entraînement, haras)',-pens,'pension');farmWeek();{const rw=retainWeek();if(rw)addLog('Contrats de premier jockey',-rw,'courses')}
   const mon=now(),sun=sunday();
   S.horses.slice().forEach(h=>{
     const age=ageAt(h);
@@ -1203,7 +1209,7 @@ function advanceWeek(){
         const dq=.6*h.g.pot+.4*h.g.dq;
         const g=makeGenes(sire,dq,h.g.dist,h.g.jump);const cg=inheritCG(sireCG(sire),ensureCoat(h).cg);const mk0=(sireMarks(sire).w+ensureMarks(h).w)/2;
         const f=newHorse({name:'',sex:sx,born:yearOf(sun),sire,dam:h.name,g,cg,origin:`Né au haras · ${S.stable}`,marks:null,mk0,status:'haras',homebred:true});
-        f.marks=marksFrom(f.ci,mk0+gauss()*.35);delete f.mk0;f.mare=h.id;(S.events=S.events||[]).push({type:'birth',id:f.id});S.horses.push(f);h.foals.push(f.id);
+        f.marks=marksFrom(f.ci,mk0+gauss()*.35);delete f.mk0;f.mare=h.id;if(S.farm)f.bredAt=S.farm.name;(S.events=S.events||[]).push({type:'birth',id:f.id});S.horses.push(f);h.foals.push(f.id);
         news(`Naissance : ${sx==='F'?'une pouliche':'un poulain'} par ${sire} et ${h.name} !`,'breed');
       }
     }
@@ -2505,6 +2511,7 @@ function viewStud(){
   const mares=S.horses.filter(h=>h.status==='broodmare'),stal=S.horses.filter(h=>h.status==='stallion'),young=S.horses.filter(h=>h.status==='haras');
   return `${tag(inSeason()?'Saison de monte ouverte':'Hors saison de monte')}<h2>Le haras</h2>
   <p class="muted">${inSeason()?'Choisis un étalon pour chaque poulinière vide. Échographie 3 semaines après la saillie, naissance environ 11 mois plus tard.':'La saison de monte va du 10 février à fin juin. Les tarifs sont les vrais tarifs 2026 des étalons.'}</p>
+  ${farmPanel()}
   <span class="lbl">Poulinières · ${mares.length}</span>
   ${mares.length?`<div class="grid">${mares.map(h=>`<div class="card"><div class="mare-pt">${horsePhoto(Object.assign(horseLook(h),{}),{w:170,seed:h.id})}${(()=>{const f=S.horses.find(x=>x.dam===h.name&&ageAt(x)<=0);return f?`${foalBadge()}`:''})()}</div><div class="hc-top"><div><b>${esc(h.name)}</b><span class="muted">${ageAt(h)} ans · par ${esc(h.sire)}</span></div></div><p class="small">${h.preg?`Pleine de <b>${esc(h.preg.sire)}</b> · naissance vers le ${fd(h.preg.due,{year:'numeric'})}`:h.cover?`Saillie par ${esc(h.cover.sire)} · échographie le ${fd(h.cover.check)}`:'Vide'}</p>${inSeason()&&!h.preg&&!h.cover?`<button class="btn" onclick="openStallions(${h.id})">Choisir un étalon</button>`:''}<button class="link" onclick="openHorse(${h.id})">Fiche</button></div>`).join('')}</div>`:'<p class="muted">Aucune poulinière. Achètes-en une à la Vente d\'Élevage, ou mets une pouliche à la reproduction.</p>'}
   ${(()=>{const c=S.horses.filter(h=>h.sex==='F'&&ageAt(h)>=3&&(h.status==='training'||h.status==='repos'));return c.length?`<div class="panel"><span class="lbl" style="color:var(--gold)">Mettre une jument à la reproduction</span>${c.map(h=>`<button class="todo" onclick="toBreed(${h.id})"><span><b>${esc(h.name)}</b><small class="muted"> · ${ageAt(h)} ans · ${h.wins} v. · ${STATUS[h.status]}</small></span><span>›</span></button>`).join('')}</div>`:''})()}
@@ -2778,6 +2785,46 @@ function openIrl(id){const h=H(id);if(!h||!h.irl)return;const N=irlNews(h);
 function saveIrl(id){const h=H(id);h.irlTr=$('#irlTr').value.trim();h.irlGoal=$('#irlGoal').value.trim();save();alertMsg('Enregistré.');renderMain()}
 function addIrlNote(id){const h=H(id);const t=$('#irlNote').value.trim();if(!t)return alertMsg('Écris la nouvelle d\'abord.');(h.irlNotes=h.irlNotes||[]).push({d:Date.now(),t});save();openIrl(id);renderMain()}
 function delIrlNote(id,i){const h=H(id);h.irlNotes.splice(i,1);save();openIrl(id);renderMain()}
+
+/* ===================== TON PROPRE HARAS =====================
+   Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
+   frais fixes de personnel, prestige d'éleveur sur les foals qui y naissent, revente possible. */
+const FARMS=[
+ {id:'anjou',n:"Petite ferme en Anjou",reg:'Maine-et-Loire',ha:12,box:6,price:320000,staff:2500,per:220,prest:.01,txt:'Une petite structure simple, idéale pour quelques juments et des sauteurs.'},
+ {id:'mayenne',n:"Ferme d'élevage en Mayenne",reg:'Mayenne',ha:18,box:8,price:550000,staff:3500,per:230,prest:.02,txt:'Bonnes herbes, terres d\'élevage de tradition. Parfait pour débuter.'},
+ {id:'orne',n:"Haras dans l'Orne",reg:'Orne, près du Pin',ha:30,box:14,price:1200000,staff:6000,per:250,prest:.04,txt:'Au cœur du pays du cheval, avec une écurie de poulinage et des paddocks clôturés.'},
+ {id:'auge',n:"Domaine dans le Pays d'Auge",reg:'Calvados',ha:45,box:20,price:2400000,staff:9000,per:250,prest:.06,txt:'Herbages normands réputés, près de Deauville et d\'Arqana. Une adresse que les acheteurs connaissent.'},
+ {id:'newmarket',n:"Stud farm près de Newmarket",reg:'Suffolk, Angleterre',ha:40,box:18,price:3000000,staff:11000,per:300,prest:.07,txt:'À deux pas de Tattersalls et des pistes d\'entraînement de Newmarket.'},
+ {id:'kildare',n:"Stud farm dans le Kildare",reg:'Comté de Kildare, Irlande',ha:60,box:25,price:3500000,staff:12000,per:280,prest:.08,txt:'Les meilleures terres d\'élevage d\'Irlande, près du Curragh et de Goffs.'},
+];
+const farmOf=()=>S.farm&&FARMS.find(f=>f.id===S.farm.id);
+const atHome=h=>h.status!=='training'&&h.status!=='sold'&&h.status!=='lot';
+const homeHorses=()=>S.horses.filter(atHome).sort((a,b)=>a.id-b.id);
+const inFarm=h=>{const F=farmOf();if(!F||!atHome(h))return false;return homeHorses().slice(0,F.box).includes(h)};
+const farmValue=()=>{const F=farmOf();if(!F)return 0;const yrs=(now()-S.farm.since)/(365*DAY);return nice(S.farm.price*Math.pow(1.02,Math.max(0,yrs)))};
+const farmBonus=h=>{const F=farmOf();return F&&h.bredAt&&h.bredAt===S.farm.name?1+F.prest:1};
+function farmPanel(){const F=farmOf();const hh=homeHorses();const pens=hh.length*750;
+  if(!F)return `<div class="panel farm"><span class="lbl" style="color:var(--gold)">Ton domaine</span><p>Tes ${hh.length||''} chevaux hors entraînement sont en pension chez d'autres${hh.length?`, pour ${eur(pens)} par mois au total`:''} (750 € par mois et par cheval).</p><p class="small muted">Achète ton propre haras : la pension coûte moins cher, tu paies le personnel, et les foals nés chez toi portent ton nom d'éleveur, ce qui les valorise en vente. Tu peux aussi louer tes boxes libres à d'autres propriétaires.</p><button class="btn" onclick="openFarms()">Voir les domaines à vendre</button></div>`;
+  const n=Math.min(hh.length,F.box),over=Math.max(0,hh.length-F.box);
+  return `<div class="panel farm own"><span class="lbl" style="color:var(--gold)">Ton domaine</span><h3>${esc(S.farm.name)}</h3><p class="small muted">${esc(F.n)} · ${esc(F.reg)} · ${F.ha} ha</p>
+   <dl class="kv"><dt>Boxes occupés</dt><dd>${n} / ${F.box}${over?` · <span class="neg">${over} en pension ailleurs</span>`:''}</dd><dt>Coût par mois</dt><dd>${eur(F.staff+n*F.per+over*750)} <small class="muted">(personnel ${eur(F.staff)} + ${eur(F.per)} par cheval)</small></dd><dt>Chevaux extérieurs</dt><dd>${S.farm.board===false?'Non':(S.farm.guests||0)+' en pension chez toi'} <small class="muted">(${eur(BOARD_IN)}/mois chacun, dans les boxes libres)</small> <button class="link" onclick="S.farm.board=S.farm.board===false;save();renderMain()">${S.farm.board===false?'Accepter':'Refuser'}</button></dd><dt>Valeur du domaine</dt><dd>${eur(farmValue())}</dd><dt>Prestige d'éleveur</dt><dd>+${Math.round(F.prest*100)} % sur la valeur des foals et yearlings nés chez toi</dd></dl>
+   <div class="row"><button class="btn ghost" onclick="renameFarm()">Renommer</button><button class="btn ghost" onclick="sellFarm()">Vendre le domaine</button></div></div>`}
+function openFarms(){const hh=homeHorses();const now_=hh.length*750;
+  openSheet(`${tag('Immobilier')}<h2>Domaines à vendre</h2><p class="small muted">Prix et charges inspirés du marché des haras en 2026. Aujourd'hui, ta pension coûte ${eur(now_)} par mois pour ${hh.length} cheva${hh.length>1?'ux':'l'}.</p>
+  ${FARMS.map(F=>{const n=Math.min(hh.length,F.box),over=Math.max(0,hh.length-F.box);const cost=F.staff+n*F.per+over*750;return `<div class="card farmcard"><b>${esc(F.n)}</b><span class="small muted">${esc(F.reg)} · ${F.ha} ha · ${F.box} boxes</span><p class="small">${esc(F.txt)}</p>
+   <dl class="kv"><dt>Prix</dt><dd><b>${eur(F.price)}</b></dd><dt>Charges</dt><dd>${eur(F.staff)}/mois + ${eur(F.per)} par cheval</dd><dt>Avec tes chevaux</dt><dd>${eur(cost)}/mois <small class="${cost<now_?'pos':'neg'}">(${cost<now_?'−':'+'}${eur(Math.abs(cost-now_))})</small></dd><dt>Boxes libres à louer</dt><dd>${Math.max(0,F.box-hh.length)} × ${eur(BOARD_IN)}/mois (selon la demande)</dd><dt>Prestige</dt><dd>+${Math.round(F.prest*100)} % sur tes foals</dd></dl>
+   <button class="btn" ${S.cash<F.price?'disabled':''} onclick="buyFarm('${F.id}')">${S.cash<F.price?'Trésorerie insuffisante':'Acheter · '+eur(F.price)}</button></div>`}).join('')}
+  <p class="small muted">Un domaine se revend à tout moment, à sa valeur moins 8 % de frais. Les domaines prennent environ 2 % de valeur par an.</p>`)}
+function buyFarm(id){const F=FARMS.find(f=>f.id===id);if(S.farm)return alertMsg('Tu as déjà un domaine. Vends-le d\'abord.');if(S.cash<F.price)return;
+  const name=(prompt('Comment veux-tu appeler ton haras ?','Haras de '+(S.stable||'ma casaque'))||'').trim()||('Haras de '+S.stable);
+  S.farm={id,name,price:F.price,since:now().getTime()};addLog(`Achat du domaine · ${name}`,-F.price,'achats');news(`Tu es propriétaire du ${name} (${F.n}, ${F.reg}).`,'sale');save();closeSheet(true);renderMain();alertMsg(`Bienvenue au ${name} !`)}
+function renameFarm(){const n=(prompt('Nouveau nom du haras',S.farm.name)||'').trim();if(!n)return;S.horses.forEach(h=>{if(h.bredAt===S.farm.name)h.bredAt=n});S.farm.name=n;save();renderMain()}
+function sellFarm(){const v=farmValue(),net=nice(v*.92);if(!confirm(`Vendre ${S.farm.name} pour ${eur(v)} (tu touches ${eur(net)} après frais) ? Tes chevaux repartiront en pension à 750 € par mois.`))return;
+  addLog(`Vente du domaine · ${S.farm.name}`,net,'ventes');news(`${S.farm.name} est vendu ${eur(v)}.`,'sale');S.farm=null;save();renderMain()}
+const BOARD_IN=650; // ce que paient les propriétaires extérieurs, par mois et par box
+function farmWeek(){const F=farmOf();if(!F)return;addLog(`Personnel et entretien · ${S.farm.name}`,-Math.round(F.staff*12/52),'pension');
+  const free=Math.max(0,F.box-homeHorses().length);if(S.farm.board===false||!free)return;const n=Math.round(free*(.45+Math.random()*.35));S.farm.guests=n;
+  if(n)addLog(`Pensions de ${n} chevaux extérieurs · ${S.farm.name}`,Math.round(n*BOARD_IN*12/52),'pension')}
 
 </script>
 
