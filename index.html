@@ -452,6 +452,10 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .panel.farm .land{margin:12px 0 4px;padding-top:10px;border-top:1px solid var(--line)}
 .panel.farm .land .hl .btn{width:auto;margin:0;padding:8px 10px;font-size:.85rem;white-space:nowrap}
 .btn.ghost.danger{color:#ff8a80;border-color:rgba(255,138,128,.5)}
+.gauge{display:grid;grid-template-columns:92px 1fr 30px;align-items:center;gap:8px;margin:6px 0;font-size:.82rem}
+.gauge i{display:block;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
+.gauge i b{display:block;height:100%;border-radius:5px}
+.gauge em{font-style:normal;text-align:right;color:var(--ink-2)}
 </style>
 </head><body>
 <div id="app"></div>
@@ -800,7 +804,7 @@ function mkt(h,d){const m=mktModel(h,d);if(!h||!h.anchor||h.status==='lot')retur
   const runs=(h.runs||0)+(h.jruns||0);if(A.r0==null)A.r0=runs;if(A.z==null)A.z=buyZ(h,A.v);
   const weeks=Math.max(0,((d||sunday())-A.d)/(7*DAY));const rev=1-Math.exp(-weeks/16); // le travail du matin révèle peu à peu si l'achat était bon
   const w=Math.exp(-weeks/78)*Math.pow(.6,Math.max(0,runs-A.r0)); // chaque course courue pour toi compte plus que le prix payé
-  return w*(A.vr||A.v*Math.exp(zK(A.v)*A.z*rev))+(1-w)*m}
+  return w*(A.vr||A.v*Math.exp(zK(A.v)*A.z*rev))*(ageAt(h,d)<=1&&typeof farmBonus==='function'?farmBonus(h):1)+(1-w)*m}
 /* Bonne affaire ou payé trop cher ? Comparé au potentiel caché attendu pour ce prix, plus une part de chance. Reste secret. */
 function buyZ(h,price){const exp=91.5+4*Math.log(Math.max(2000,price)/40000);let z=.7*((h.g.pot-exp)/8)+.55*gauss();if(Math.random()<.05)z+=1.6; // de temps en temps, une vraie pépite
   return clamp(z,-2.3,2.9)}
@@ -2897,7 +2901,7 @@ const farmCap=()=>{const F=farmOf();return F?Math.min(F.box,Math.floor(farmHa())
 const appre=()=>S.farm.mk||1; // indice du marché immobilier, qui bouge chaque semaine
 const inFarm=h=>{const F=farmOf();if(!F||!atHome(h))return false;return homeHorses().slice(0,farmCap()).includes(h)};
 const farmValue=()=>{const F=farmOf();if(!F)return 0;return nice((S.farm.price+(farmHa()-F.ha)*F.land)*appre())};
-const farmBonus=h=>{const F=farmOf();return F&&h.bredAt&&h.bredAt===S.farm.name?1+F.prest:1};
+const farmBonus=h=>{const F=farmOf();if(!F)return 1;return (h.bredAt&&h.bredAt===S.farm.name?1+F.prest:1)*(inFarm(h)||h.bredAt===S.farm.name?condBonus():1)};
 function farmPanel(){const F=farmOf();const hh=homeHorses();const pens=hh.length*750;
   if(!F)return `<div class="panel farm"><span class="lbl" style="color:var(--gold)">Ton domaine</span><p>Tes ${hh.length||''} chevaux hors entraînement sont en pension chez d'autres${hh.length?`, pour ${eur(pens)} par mois au total`:''} (750 € par mois et par cheval).</p><p class="small muted">Achète ton propre haras : la pension coûte moins cher, tu paies le personnel, et les foals nés chez toi portent ton nom d'éleveur, ce qui les valorise en vente. Surtout, tes jeunes chevaux y grandissent mieux qu'en pension : plus de potentiel, meilleure santé. Tu peux aussi louer tes boxes libres à d'autres propriétaires. Plus cher au départ et plus risqué, mais ça peut rapporter.</p><button class="btn" onclick="openFarms()">Voir les domaines à vendre</button></div>`;
   const cap=farmCap(),n=Math.min(hh.length,cap),over=Math.max(0,hh.length-cap);
@@ -2909,7 +2913,7 @@ function farmPanel(){const F=farmOf();const hh=homeHorses();const pens=hh.length
 function openFarms(){const hh=homeHorses();const now_=hh.length*750;const rf=U.freg||'all';const ads=farmAds();const regs=[...new Set(ads.map(a=>a.reg))];
   openSheet(`${tag('Immobilier')}<h2>Domaines à vendre</h2><p class="small muted">${ads.length} annonces dans ${regs.length} régions, renouvelées toutes les 8 semaines. Prix calés sur le prix des terres et les annonces de haras en 2025-2026 : ce sont des estimations, pas de vraies annonces. Aujourd'hui, ta pension coûte ${eur(now_)} par mois pour ${hh.length} cheva${hh.length>1?'ux':'l'}.</p>
   <div class="opts filter">${[['all','Toutes'],...regs.map(r=>[r,r.replace(/ \(.*\)/,'')])].map(([k,n])=>`<button class="opt" aria-pressed="${rf===k}" onclick="U.freg=${JSON.stringify(k).replace(/"/g,'&quot;')};openFarms()">${esc(n)}</button>`).join('')}</div>
-  ${ads.filter(F=>rf==='all'||F.reg===rf).map(F=>{const n=Math.min(hh.length,F.box),over=Math.max(0,hh.length-F.box);const cost=F.staff+n*F.per+over*750;return `<div class="card farmcard"><b>${esc(F.n)}</b><span class="small muted">${esc(F.reg)} · ${F.ha} ha · ${F.box} boxes</span><p class="small">${esc(F.txt)}</p><p class="small muted">Herbages ${['','à refaire','corrects','excellents'][F.herbe||2]} · ${F.clot?'lices de bois':'clôtures simples'}${F.abris?' · abris':''}${F.poul?' · écurie de poulinage':''}${F.rond?' · rond de longe':''}${F.piste?' · piste':''}</p>
+  ${ads.filter(F=>rf==='all'||F.reg===rf).map(F=>{const n=Math.min(hh.length,F.box),over=Math.max(0,hh.length-F.box);const cost=F.staff+n*F.per+over*750;return `<div class="card farmcard"><b>${esc(F.n)}</b><span class="small muted">${esc(F.reg)} · ${F.ha} ha · ${F.box} boxes</span><p class="small">${esc(F.txt)}</p><p class="small muted">État ${farmScore(adFac(F))}/100 · herbages ${['','à refaire','corrects','excellents'][F.herbe||2]} · ${F.clot?'lices de bois':'clôtures simples'}${F.abris?' · abris':''}${F.poul?' · écurie de poulinage':''}${F.rond?' · rond de longe':''}${F.piste?' · piste':''}</p>
    <dl class="kv"><dt>Prix</dt><dd><b>${eur(F.price)}</b></dd><dt>Charges</dt><dd>${eur(F.staff)}/mois d'entretien + ${eur(F.per)} par cheval</dd><dt>Avec tes chevaux</dt><dd>${eur(cost)}/mois <small class="${cost<now_?'pos':'neg'}">(${cost<now_?'−':'+'}${eur(Math.abs(cost-now_))})</small></dd><dt>Boxes libres à louer</dt><dd>${Math.max(0,F.box-hh.length)} boxes, il te reste ${eur(guestNet(F))}/mois par cheval accueilli</dd><dt>Gain estimé</dt><dd class="pos">≈ ${eur(Math.round(n*750-(F.staff+n*F.per)+Math.max(0,F.box-hh.length)*.6*guestNet(F)))}/mois · remboursé en ≈ ${Math.max(1,Math.round(F.price/Math.max(1,(n*750-(F.staff+n*F.per)+Math.max(0,F.box-hh.length)*.6*guestNet(F))*12)))} ans</dd><dt>Prestige</dt><dd>+${Math.round(F.prest*100)} % sur tes foals</dd><dt>Qualité d'élevage</dt><dd>${'★'.repeat(Math.round(F.q*5))}${'☆'.repeat(5-Math.round(F.q*5))} · jusqu'à +${String(raiseCap(F)).replace('.',',')} de potentiel pour tes jeunes</dd></dl>
    <button class="btn" ${S.cash<F.price?'disabled':''} onclick="buyFarm('${F.id}')">${S.cash<F.price?'Trésorerie insuffisante':'Acheter · '+eur(F.price)}</button></div>`}).join('')}
   <p class="small muted">Un domaine se revend à tout moment, à sa valeur moins 8 % de frais. La valeur des domaines suit le marché : environ +2 % par an en moyenne, mais elle peut aussi baisser. Attention aux imprévus (tempête, travaux…).</p>`)}
@@ -2919,24 +2923,42 @@ function buyFarm(id){const F=farmAds().find(f=>f.id===id);if(!F)return;if(S.farm
 function renameFarm(){const n=(prompt('Nouveau nom du haras',S.farm.name)||'').trim();if(!n)return;S.horses.forEach(h=>{if(h.bredAt===S.farm.name)h.bredAt=n});S.farm.name=n;save();renderMain()}
 function sellFarm(){const v=farmValue(),net=nice(v*.92);if(!confirm(`Vendre ${S.farm.name} pour ${eur(v)} (tu touches ${eur(net)} après frais) ? Tes chevaux repartiront en pension à 750 € par mois.`))return;
   addLog(`Vente du domaine · ${S.farm.name}`,net,'ventes');news(`${S.farm.name} est vendu ${eur(v)}.`,'sale');S.farm=null;save();renderMain()}
-/* ===== Herbages et équipements ===== */
+/* ===== État du haras : herbages (s'usent), clôtures, abris, installations, niveau de soins =====
+   Un score sur 100 qui améliore un peu la croissance des jeunes et la valeur des foals et yearlings (jusqu'à +10 %). */
+const HP0=[0,40,65,90];
+const CARE=[null,{n:'Essentiels',c:0,d:'Vermifuges, vaccins, maréchal : le minimum.'},{n:'Suivis',c:80,d:'Vétérinaire régulier, aliments de qualité, ostéopathe.'},{n:'Haut de gamme',c:200,d:'Suivi vétérinaire complet, compléments, soins de champion.'}];
 const FAC=[
- {k:'herbe',n:'Herbages',lv:['','À refaire','Corrects','Excellents'],cost:()=>Math.round(farmHa()*650/10)*10,act:'Rénover les herbages',fx:'Herbe plus riche : tes jeunes progressent plus vite et coûtent moins cher à nourrir (−5 % par niveau). L\'herbe s\'use et perd un niveau tous les 2 ans environ.'},
- {k:'clot',n:'Clôtures en lices de bois',cost:()=>Math.round(farmHa()*2500/100)*100,act:'Poser des lices',fx:'Moins d\'accidents au pré et moins d\'imprévus coûteux (−40 %).'},
- {k:'abris',n:'Abris dans les prés',cost:()=>Math.ceil(farmHa()/5)*4500,act:'Construire des abris',fx:'Chevaux au sec l\'hiver : tes jeunes deviennent plus solides (santé ×2).'},
- {k:'poul',n:'Écurie de poulinage avec caméras',cost:()=>28000,act:'Construire',fx:'Poulinages surveillés : tes foals naissent un peu plus solides et avec un peu plus de potentiel.'},
- {k:'rond',n:'Rond de longe et marcheur',cost:()=>32000,act:'Installer',fx:'Jeunes mieux manipulés et débourrés : meilleur mental (×2).'},
- {k:'piste',n:'Piste de pré-entraînement',cost:()=>90000,need:30,act:'Créer la piste',fx:'Tes 2 ans progressent davantage avant de partir à l\'entraînement (+1 point de potentiel au maximum).'},
+ {k:'clot',n:'Clôtures en lices de bois',cost:()=>Math.round(farmHa()*2500/100)*100,act:'Poser des lices',fx:'Moins d\'accidents au pré, 40 % d\'imprévus en moins.',pts:15},
+ {k:'abris',n:'Abris dans les prés',cost:()=>Math.ceil(farmHa()/5)*4500,act:'Construire des abris',fx:'Chevaux au sec l\'hiver : jeunes plus solides.',pts:15},
+ {k:'poul',n:'Écurie de poulinage avec caméras',cost:()=>28000,act:'Construire',fx:'Foals un peu plus solides à la naissance.',pts:10},
+ {k:'rond',n:'Rond de longe et marcheur',cost:()=>32000,act:'Installer',fx:'Jeunes mieux manipulés : meilleur mental.',pts:7},
+ {k:'piste',n:'Piste de pré-entraînement',cost:()=>90000,need:30,act:'Créer la piste',fx:'Les 2 ans gagnent un peu plus avant l\'entraînement.',pts:8},
 ];
-const fac=()=>{if(!S.farm)return {};if(!S.farm.fac){const D=S.farm.def||{};S.farm.fac={herbe:D.herbe||2,clot:!!D.clot,abris:!!D.abris,poul:D.poul!=null?!!D.poul:(D.box||0)>=12,rond:!!D.rond,piste:!!D.piste,hw:S.week}}return S.farm.fac};
-const qEff=F=>{const f=F&&F===farmOf()?fac():{herbe:F.herbe||2,abris:F.abris,rond:F.rond,piste:F.piste};return Math.round(clamp(F.q*(.85+.05*f.herbe+(f.abris?.04:0)+(f.rond?.03:0)+(f.piste?.03:0)),.2,1.15)*100)/100};
-const perEff=F=>Math.round(F.per*(1.1-.05*(F===farmOf()?fac().herbe:(F.herbe||2))));
-function facPanel(){const f=fac();return `<div class="land"><span class="lbl">Herbages et équipements</span>${FAC.map(x=>{const v=f[x.k];const have=x.k==='herbe'?v>=3:!!v;const lock=x.need&&farmHa()<x.need;
-  return `<div class="hl"><div><b>${x.n}</b> <span class="${have?'pos':x.k==='herbe'&&v===1?'neg':'muted'}">${x.k==='herbe'?x.lv[v]:have?'✓':'non'}</span><br><span class="muted small">${x.fx}</span></div>${have?'':lock?`<span class="small muted">${x.need} ha min.</span>`:`<button class="btn ghost" ${S.cash<x.cost()?'disabled':''} onclick="improve('${x.k}')">${eur(x.cost())}</button>`}</div>`}).join('')}
-  <p class="small muted">Qualité d'élevage actuelle : ${'★'.repeat(Math.round(qEff(farmOf())*5))}${'☆'.repeat(Math.max(0,5-Math.round(qEff(farmOf())*5)))}. Les travaux augmentent aussi la valeur du domaine (70 % de leur coût).</p></div>`}
+const fac=()=>{if(!S.farm)return {};const D=S.farm.def||{};if(!S.farm.fac)S.farm.fac={herbe:D.herbe||2,clot:!!D.clot,abris:!!D.abris,poul:D.poul!=null?!!D.poul:(D.box||0)>=12,rond:!!D.rond,piste:!!D.piste};
+  const f=S.farm.fac;if(f.hp==null)f.hp=HP0[f.herbe||2];if(!f.care)f.care=1;return f};
+/* score sur 100 : herbages 35, équipements 55, soins 10 */
+function farmScore(f){return Math.round(f.hp*.35+FAC.reduce((a,x)=>a+(f[x.k]?x.pts:0),0)+[0,0,5,10][f.care||1])}
+const adFac=F=>({hp:HP0[F.herbe||2],clot:F.clot,abris:F.abris,poul:F.poul,rond:F.rond,piste:F.piste,care:1});
+const facOf=F=>F&&F===farmOf()?fac():adFac(F);
+const qEff=F=>Math.round(clamp(F.q*(.8+.3*farmScore(facOf(F))/100),.2,1.15)*100)/100;
+const perEff=F=>{const f=facOf(F);return Math.round(F.per*(1.08-.12*f.hp/100)+CARE[f.care||1].c)};
+const condBonus=()=>{const F=farmOf();return F?1+.1*farmScore(fac())/100:1}; // jusqu'à +10 % sur la valeur des jeunes élevés chez toi
+const bar=(v,lab)=>`<div class="gauge"><span>${lab}</span><i><b style="width:${clamp(v,0,100)}%;background:${v>=70?'var(--pos,#5fd38d)':v>=45?'var(--gold)':'#ff8a80'}"></b></i><em>${Math.round(v)}</em></div>`;
+function facPanel(){const F=farmOf(),f=fac(),sc=farmScore(f);const eq=FAC.reduce((a,x)=>a+(f[x.k]?x.pts:0),0);
+  const reno=Math.max(Math.round(farmHa()*900*(100-f.hp)/100/10)*10,Math.round(farmHa()*200/10)*10);
+  return `<div class="land"><span class="lbl">État du haras · ${sc}/100</span>
+  ${bar(f.hp,'Herbages')}${bar(eq/55*100,'Équipements')}${bar([0,30,65,100][f.care],'Soins')}
+  <p class="small">Effet : tes jeunes gagnent jusqu'à +${String(raiseCap(F)).replace('.',',')} de potentiel ici, et tes foals et yearlings valent <b>+${Math.round((condBonus()-1)*100)} %</b> grâce à l'état du haras${F.prest?` (plus +${Math.round(F.prest*100)} % de prestige d'éleveur)`:''}.</p>
+  <div class="hl"><div><b>Herbages</b> <span class="${f.hp>=70?'pos':f.hp>=45?'muted':'neg'}">${f.hp>=80?'excellents':f.hp>=60?'corrects':f.hp>=40?'fatigués':'à refaire'}</span><br><span class="muted small">L'herbe s'use chaque semaine, plus vite si tu mets beaucoup de chevaux par hectare. Sursemis, chaulage, drainage : retour à 100.</span></div>${f.hp>=97?'':`<button class="btn ghost" ${S.cash<reno?'disabled':''} onclick="renovate(${reno})">${eur(reno)}</button>`}</div>
+  ${FAC.map(x=>{const have=!!f[x.k];const lock=x.need&&farmHa()<x.need;return `<div class="hl"><div><b>${x.n}</b> <span class="${have?'pos':'muted'}">${have?'✓':'non'}</span><br><span class="muted small">${x.fx}</span></div>${have?'':lock?`<span class="small muted">${x.need} ha min.</span>`:`<button class="btn ghost" ${S.cash<x.cost()?'disabled':''} onclick="improve('${x.k}')">${eur(x.cost())}</button>`}</div>`}).join('')}
+  <div class="hl"><div><b>Niveau de soins</b> <span class="muted">${CARE[f.care].n}</span><br><span class="muted small">${CARE[f.care].d}</span></div></div>
+  <div class="opts filter">${[1,2,3].map(c=>`<button class="opt" aria-pressed="${f.care===c}" onclick="setCare(${c})">${CARE[c].n}${CARE[c].c?` · +${CARE[c].c} €/cheval`:''}</button>`).join('')}</div>
+  <p class="small muted">Les travaux font aussi monter la valeur du domaine (70 % de leur coût).</p></div>`}
 function improve(k){const x=FAC.find(y=>y.k===k),f=fac();const c=x.cost();if(c>S.cash)return alertMsg('Trésorerie insuffisante.');
-  if(!confirm(`${x.act} pour ${eur(c)} ?`))return;if(k==='herbe'){f.herbe=Math.min(3,f.herbe+1);f.hw=S.week}else f[k]=true;S.farm.price+=c*.7;
-  addLog(`${x.act} · ${S.farm.name}`,-c,'achats');news(`${S.farm.name} : ${x.act.toLowerCase()}.`,'sale');save();renderMain()}
+  if(!confirm(`${x.act} pour ${eur(c)} ?`))return;f[k]=true;S.farm.price+=c*.7;addLog(`${x.act} · ${S.farm.name}`,-c,'achats');news(`${S.farm.name} : ${x.act.toLowerCase()}.`,'sale');save();renderMain()}
+function renovate(c){if(c>S.cash)return alertMsg('Trésorerie insuffisante.');if(!confirm(`Rénover les herbages pour ${eur(c)} ?`))return;const f=fac();f.hp=100;S.farm.price+=c*.5;addLog(`Rénovation des herbages · ${S.farm.name}`,-c,'achats');save();renderMain()}
+function setCare(c){fac().care=c;save();renderMain()}
+function wearGrass(){const f=fac();const load=homeHorses().filter(inFarm).length/Math.max(1,farmHa());const before=f.hp;f.hp=Math.max(15,f.hp-(.12+.6*load));if(before>=45&&f.hp<45)news(`${S.farm.name} : les herbages sont fatigués, pense à les rénover.`,'bad')}
 const BOARD_IN=750; // ce que paient les propriétaires extérieurs, par mois et par box
 const guestNet=F=>BOARD_IN-(F===farmOf()?perEff(F):F.per); // ce qu'il te reste une fois le cheval nourri et soigné
 /* Élevage : les jeunes (foals, yearlings, 2 ans pas encore à l'entraînement) élevés chez toi progressent mieux :
@@ -2947,7 +2969,7 @@ function raiseYoung(F){const q=qEff(F),f=fac();S.horses.forEach(h=>{if(!inFarm(h
 const INCIDENTS=["Tempête : clôtures et toitures à refaire","Panne du tracteur et de la faucheuse","Paddocks inondés à drainer","Réfection d'une partie de l'écurie","Foudre sur le hangar à foin","Mise aux normes de la sellerie et des boxes"];
 function farmWeek(){const F=farmOf();if(!F)return;
   S.farm.mk=(S.farm.mk||1)*Math.exp(.0004+gauss()*.01);raiseYoung(F);
-  {const f=fac();if(f.herbe>1&&S.week-(f.hw||0)>=104){f.herbe--;f.hw=S.week;news(`${S.farm.name} : les herbages s'usent, pense à les rénover.`,'bad')}}
+  wearGrass();
   if(Math.random()<.015*(fac().clot?.6:1)){const c=nice(rand(2000,15000)*Math.sqrt(F.price/650000));const w=pick(INCIDENTS);addLog(`${w} · ${S.farm.name}`,-c,'frais');news(`${S.farm.name} : ${w.toLowerCase()} (${eur(c)}).`,'bad')}addLog(`Entretien du domaine · ${S.farm.name}`,-Math.round(F.staff*12/52),'pension');
   const free=Math.max(0,farmCap()-homeHorses().length);if(S.farm.board===false||!free)return;const n=Math.round(free*(.45+Math.random()*.35));S.farm.guests=n;
   if(n)addLog(`Pensions de ${n} chevaux extérieurs · ${S.farm.name}`,Math.round(n*guestNet(F)*12/52),'pension')}
