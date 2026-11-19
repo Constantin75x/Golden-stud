@@ -2229,7 +2229,7 @@ function openHorse(id){
   if(h.broken===false)pref.push(['Débourrage',`${h.brk||0} semaines sur 6`]);
   const sk=sellKind(h);
   const upcoming=salesAround().filter(x=>x.s.sell.includes(sk)&&x.d>sunday()).slice(0,4);
-  let actions='';{const L=lotOfHorse(h);if(L)actions+=cancelBtn(L)}ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
+  let actions='';if(h.sex==='F'&&!h.preg&&(h.pregUnknown||h.status==='broodmare'&&!h.cover&&h.price))actions+=`<div class="panel"><span class="lbl">Gestation</span><p class="small">${h.pregUnknown?'Le jeu ne sait pas si elle est pleine.':'Elle est notée vide.'} Si elle est pleine (voir le catalogue), indique l'étalon :</p><input type="text" id="hpreg" list="sirelist2" placeholder="ex. Doctor Dino"><datalist id="sirelist2">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist><button class="btn ghost" onclick="setPreg(${h.id},$('#hpreg').value)">Elle est pleine</button>${h.pregUnknown?`<button class="btn ghost" onclick="setPreg(${h.id},'')">Elle est vide</button>`:''}</div>`;{const L=lotOfHorse(h);if(L)actions+=cancelBtn(L)}ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
   if(h.status==='training'||h.status==='repos'){
     actions+=`<label class="f"><span>Entraîneur</span>${trainerSelect(h,'trs')}</label><button class="btn ghost" onclick="setTrainer(${h.id})">${h.status==='repos'?'Remettre à l\'entraînement':'Changer d\'entraîneur'}</button>`;
     if(h.status==='training')actions+=`<button class="btn ghost" onclick="setStatus(${h.id},'repos')">Mettre au repos au haras</button>`;
@@ -2502,9 +2502,10 @@ function declareBuy(key,no,price){no=parseInt(no,10);const p=parseEur(price);
   openSheet(`${tag('Confirmer l\'achat')}<h2>Lot ${lot3(no)}</h2><p><b>${esc(lotTitle(l))}</b><br><span class="muted">${esc(lotSub(l))} · par ${esc(l.h.sire)} et ${esc(l.h.dam)}</span></p>
    <div class="kpis"><div><span>Adjudication</span><b>${eur(p)}</b></div><div><span>Tu paies</span><b>${eur(total)}</b></div><div><span>Trésorerie après</span><b class="${S.cash-total<0?'neg':''}">${eur(S.cash-total)}</b></div></div>
    ${S.cash-total<0?'<p class="warnbox">Ta trésorerie passera en négatif. Tu pourras revendre ou faire gagner tes chevaux pour te refaire.</p>':''}
-   <button class="btn big" onclick="confirmDeclare('${key}',${no},${p})">Confirmer l'achat</button><button class="btn ghost" onclick="closeSheet()">Annuler</button>`)}
-function confirmDeclare(key,no,p){const id=`joueur-${key}-${no}`;S.applied=(S.applied||[]).filter(x=>x!==id);
-  REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push({_id:id,vente:key,lot:no,prixReel:p,decl:true});closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
+   ${l.kind==='J'||l.h.sex==='F'&&ageAt(l.h)>=3?`<div class="panel"><span class="lbl">Gestation</span><p class="small">Pleine de quel étalon ? (regarde le catalogue ou le site d'Arqana). Laisse vide si elle est vide.</p><input type="text" id="dpreg" list="sirelist" placeholder="ex. Doctor Dino" value="${esc(l.h.preg?l.h.preg.sire:'')}"><datalist id="sirelist">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist></div>`:''}
+   <button class="btn big" onclick="confirmDeclare('${key}',${no},${p},$('#dpreg')?$('#dpreg').value.trim():null)">Confirmer l'achat</button><button class="btn ghost" onclick="closeSheet()">Annuler</button>`)}
+function confirmDeclare(key,no,p,preg){const id=`joueur-${key}-${no}`;S.applied=(S.applied||[]).filter(x=>x!==id);
+  REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push(Object.assign({_id:id,vente:key,lot:no,prixReel:p,decl:true},preg!=null?{pleineDe:preg}:{}));closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
 function fixDeclared(key,no,price){const l=S.lots[key].find(x=>x.no===no);const p=parseEur(price);if(!l||!l.real||!(p>=500))return alertMsg('Prix invalide.');
   const old=l.price,nw=p+PREMIUM,d=nw-old;if(!d)return closeSheet();if(l.buy)l.buy.paid=nw;addLog(`Correction du prix · lot ${lot3(no)}`,-d,'achats');l.price=nw;l.real.prixReel=p;const h=S.horses.find(x=>x.origin&&x.origin.endsWith('lot '+lot3(no))&&x.price===old);if(h)h.price=nw;save();closeSheet();alertMsg('Prix corrigé.')}
 function applyReal(){setTimeout(()=>{try{applyValeurs();save()}catch(e){}},0);
@@ -2721,6 +2722,10 @@ function openMenu(){openSheet(`<h2>Menu</h2><div class="sh-head">${silkSVG(S.sil
 /* ---------- Démarrage ---------- */
 REAL.docs=ACHATS.map(d=>Object.assign({_id:d.id||(d.vente+'-'+d.lot)},d));REAL.ready=true;REAL.state='ok';
 render();
+
+function setPreg(id,sire){const h=H(id);sire=(sire||'').trim();h.pregUnknown=false;
+  if(sire){const y=yearOf(sunday())+(sunday().getUTCMonth()>=6?1:0);h.preg={sire,due:addDays(mkD(y,1,1),rint(100)).getTime()};news(`${disp(h)} est pleine de ${sire}.`,'breed')}else h.preg=null;
+  save();closeSheet(true);openHorse(id);renderMain()}
 
 /* ===================== MON ÉQUIPE : entraîneurs et jockeys =====================
    Premier jockey (contrat à l'année, payé chaque semaine) en plat et en obstacle,
