@@ -2382,7 +2382,7 @@ const isReal=key=>REAL_KEYS.includes(key);
 const lot3=no=>String(no).padStart(3,'0');
 function lotTitle(l){const h=l.h;if(h.name)return h.name;const w=h.sex==='F'?(['F','Y','YO'].includes(l.kind)?'Pouliche':'Femelle'):h.sex==='H'?'Hongre':(['F','Y','YO'].includes(l.kind)?'Poulain':'Mâle');return `${w} ${h.dam?'issue de '+h.dam:''}`.trim()}
 function lotSub(l){const h=l.h;const a=ageAt(h,saleInfo(l.key).d);
-  if(l.kind==='J')return h.preg?`Jument de ${a} ans, pleine de ${h.preg.sire}`:h.pregUnknown?`Jument de ${a} ans · gestation : voir catalogue`:`Jument de ${a} ans, vide`;
+  if(l.kind==='J'){const A=h.ageEst?'Jument (âge : voir la fiche Arqana)':`Jument de ${a} ans`;return h.preg?`${A}, pleine de ${h.preg.sire}`:h.pregUnknown?`${A} · gestation : voir la fiche Arqana`:`${A}, vide`}
   if(l.kind==='F')return `Foal ${h.born}, ${h.sex==='F'?'femelle':'mâle'}${h.yname?' · nom déposé : '+h.yname:''}`;
   if(l.kind==='Y'||l.kind==='YE'||l.kind==='YO')return `Yearling${l.kind==='YO'?' d\'obstacle':''} ${h.sex==='F'?'femelle':'mâle'}${h.yname?' · nom déposé : '+h.yname:''}`;
   if(l.kind==='ST')return `Store ${a} ans (obstacle, inédit) · ${h.sex==='F'?'femelle':h.sex==='H'?'hongre':'mâle'}`;
@@ -2509,10 +2509,10 @@ function declareBuy(key,no,price){no=parseInt(no,10);const p=parseEur(price);
   openSheet(`${tag('Confirmer l\'achat')}<h2>Lot ${lot3(no)}</h2><p><b>${esc(lotTitle(l))}</b><br><span class="muted">${esc(lotSub(l))} · par ${esc(l.h.sire)} et ${esc(l.h.dam)}</span></p>
    <div class="kpis"><div><span>Adjudication</span><b>${eur(p)}</b></div><div><span>Tu paies</span><b>${eur(total)}</b></div><div><span>Trésorerie après</span><b class="${S.cash-total<0?'neg':''}">${eur(S.cash-total)}</b></div></div>
    ${S.cash-total<0?'<p class="warnbox">Ta trésorerie passera en négatif. Tu pourras revendre ou faire gagner tes chevaux pour te refaire.</p>':''}
-   ${l.kind==='J'||l.h.sex==='F'&&ageAt(l.h)>=3?`<div class="panel"><span class="lbl">Gestation</span><p class="small">Pleine de quel étalon ? (regarde le catalogue ou le site d'Arqana). Laisse vide si elle est vide.</p><input type="text" id="dpreg" list="sirelist" placeholder="ex. Doctor Dino" value="${esc(l.h.preg?l.h.preg.sire:'')}"><datalist id="sirelist">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist></div>`:''}
-   <button class="btn big" onclick="confirmDeclare('${key}',${no},${p},$('#dpreg')?$('#dpreg').value.trim():null)">Confirmer l'achat</button><button class="btn ghost" onclick="closeSheet()">Annuler</button>`)}
-function confirmDeclare(key,no,p,preg){const id=`joueur-${key}-${no}`;S.applied=(S.applied||[]).filter(x=>x!==id);
-  REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push(Object.assign({_id:id,vente:key,lot:no,prixReel:p,decl:true},preg!=null?{pleineDe:preg}:{}));closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
+   ${l.kind==='J'||l.h.sex==='F'&&ageAt(l.h)>=3?`<div class="panel"><span class="lbl">D'après sa fiche Arqana</span><p class="small">Recopie ce qu'indique sa fiche Arqana, pour que le jeu soit exact.</p><label class="f"><span>Année de naissance</span><input type="text" inputmode="numeric" id="dborn" placeholder="ex. 2021" value="${l.h.ageEst?'':l.h.born}"></label><label class="f"><span>Pleine de (laisse vide si elle est vide)</span></label><input type="text" id="dpreg" list="sirelist" placeholder="ex. Doctor Dino" value="${esc(l.h.preg?l.h.preg.sire:'')}"><datalist id="sirelist">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist></div>`:''}
+   <button class="btn big" onclick="if($('#dborn')&&!/^(19|20)\\d\\d$/.test($('#dborn').value.trim()))return alertMsg('Indique son année de naissance (sur sa fiche Arqana).');confirmDeclare('${key}',${no},${p},$('#dpreg')?$('#dpreg').value.trim():null,$('#dborn')?+$('#dborn').value.trim():null)">Confirmer l'achat</button><button class="btn ghost" onclick="closeSheet()">Annuler</button>`)}
+function confirmDeclare(key,no,p,preg,born){const id=`joueur-${key}-${no}`;S.applied=(S.applied||[]).filter(x=>x!==id);
+  REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push(Object.assign({_id:id,vente:key,lot:no,prixReel:p,decl:true},preg!=null?{pleineDe:preg}:{},born?{ne:born}:{}));closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
 function fixDeclared(key,no,price){const l=S.lots[key].find(x=>x.no===no);const p=parseEur(price);if(!l||!l.real||!(p>=500))return alertMsg('Prix invalide.');
   const old=l.price,nw=p+PREMIUM,d=nw-old;if(!d)return closeSheet();if(l.buy)l.buy.paid=nw;addLog(`Correction du prix · lot ${lot3(no)}`,-d,'achats');l.price=nw;l.real.prixReel=p;const h=S.horses.find(x=>x.origin&&x.origin.endsWith('lot '+lot3(no))&&x.price===old);if(h)h.price=nw;save();closeSheet();alertMsg('Prix corrigé.')}
 function applyReal(){setTimeout(()=>{try{applyValeurs();save()}catch(e){}},0);
@@ -2524,6 +2524,7 @@ function applyReal(){setTimeout(()=>{try{applyValeurs();save()}catch(e){}},0);
     if(!l){S.lots[key]=S.lots[key]||[];const h=horseFromDoc(d,kind);l=lotFromHorse(h,+d.lot,d.vendeur||'',kind,key);S.lots[key].push(l);S.lots[key].sort((a,b)=>a.no-b.no)}
     const h=l.h;
     if(d.nom)h.name=d.nom;if(d.pere)h.sire=d.pere;if(d.mere)h.dam=d.mere;if(d.sexe)h.sex=d.sexe;
+    if(d.ne){h.born=+d.ne;h.ageEst=false}
     if(d.pleineDe){h.preg={sire:d.pleineDe,due:(d.terme?new Date(d.terme):addDays(mkD(2027,1,1),rint(100))).getTime()};h.pregUnknown=false}
     else if(kind==='J'&&d.pleineDe===''){h.preg=null;h.pregUnknown=false}
     h.origin=`Arqana ${saleInfo(key).s.n} ${saleInfo(key).y} · lot ${lot3(d.lot)}`;
