@@ -788,12 +788,14 @@ function mkt(h,d){const m=mktModel(h,d);if(!h||!h.anchor||h.status==='lot')retur
   const runs=(h.runs||0)+(h.jruns||0);if(A.r0==null)A.r0=runs;if(A.z==null)A.z=buyZ(h,A.v);
   const weeks=Math.max(0,((d||sunday())-A.d)/(7*DAY));const rev=1-Math.exp(-weeks/16); // le travail du matin révèle peu à peu si l'achat était bon
   const w=Math.exp(-weeks/78)*Math.pow(.6,Math.max(0,runs-A.r0)); // chaque course courue pour toi compte plus que le prix payé
-  return w*A.v*Math.exp(.45*A.z*rev)+(1-w)*m}
+  return w*A.v*Math.exp(zK(A.v)*A.z*rev)+(1-w)*m}
 /* Bonne affaire ou payé trop cher ? Comparé au potentiel caché attendu pour ce prix, plus une part de chance. Reste secret. */
-function buyZ(h,price){const exp=91.5+4*Math.log(Math.max(2000,price)/40000);return clamp(.7*((h.g.pot-exp)/8)+.5*gauss(),-2.2,2.2)}
+function buyZ(h,price){const exp=91.5+4*Math.log(Math.max(2000,price)/40000);let z=.7*((h.g.pot-exp)/8)+.55*gauss();if(Math.random()<.05)z+=1.6; // de temps en temps, une vraie pépite
+  return clamp(z,-2.3,2.9)}
+const zK=v=>v<30000?.62:v<100000?.55:.48; // les chevaux bon marché ont le plus de marge de surprise
 function buyVerdict(h){const A=h.anchor;if(!A||A.z==null)return '';const weeks=Math.max(0,(sunday()-A.d)/(7*DAY));const rev=1-Math.exp(-weeks/16);const e=A.z*rev;
   if(rev<.35)return 'Trop tôt pour savoir si ton achat était une bonne affaire : son entourage le découvre peu à peu.';
-  return e>.7?'Il se révèle meilleur que prévu : tu l\'as payé moins cher qu\'il ne vaut.':e>.25?'Plutôt une bonne affaire pour l\'instant.':e<-.7?'Il déçoit son entourage : tu l\'as payé plus cher qu\'il ne vaut.':e<-.25?'Un peu payé cher, pour l\'instant.':'Payé à peu près son prix.'}
+  return e>1.6?'Une vraie pépite : il vaut bien plus que ce que tu l\'as payé !':e>.7?'Il se révèle meilleur que prévu : tu l\'as payé moins cher qu\'il ne vaut.':e>.25?'Plutôt une bonne affaire pour l\'instant.':e<-.7?'Il déçoit son entourage : tu l\'as payé plus cher qu\'il ne vaut.':e<-.25?'Un peu payé cher, pour l\'instant.':'Payé à peu près son prix.'}
 function mktModel(h,d){
   d=d||sunday();const age=ageAt(h,d);
   if(h.status==='stallion')return Math.max(30000,h.fee*55);
