@@ -469,6 +469,12 @@ const AUT_LOTS=[[1, "H", "T", "Inmate", "Waldpfad", "Intimhir", "Bellemère"], [
 const ACHATS=[
 ];
 
+/* ===================== VALEURS RÉELLES (fixées par Claude) =====================
+   Pour un cheval acheté dont on connaît mieux la vraie valeur : { lot:'autumn-2026-495', valeur:45000, pot:95, pourquoi:'…' } */
+const VALEURS=[
+ {lot:'autumn-2026-495',valeur:50000,pot:95,pourquoi:"Fils de Doctor Dino, l'un des meilleurs étalons d'obstacle (père de State Man, Sceau Royal, Docteur de Ballon) : à 15 000 €, c'est une bonne affaire."},
+];
+
 /* ===================== SUIVI EN VRAI (noté par Claude) =====================
    Vraies nouvelles des chevaux achetés : { lot:'autumn-2026-116' ou cheval:'Nom', date:'2026-11-20', texte:'…', lien:'https://…' } */
 const SUIVI=[
@@ -788,12 +794,12 @@ function mkt(h,d){const m=mktModel(h,d);if(!h||!h.anchor||h.status==='lot')retur
   const runs=(h.runs||0)+(h.jruns||0);if(A.r0==null)A.r0=runs;if(A.z==null)A.z=buyZ(h,A.v);
   const weeks=Math.max(0,((d||sunday())-A.d)/(7*DAY));const rev=1-Math.exp(-weeks/16); // le travail du matin révèle peu à peu si l'achat était bon
   const w=Math.exp(-weeks/78)*Math.pow(.6,Math.max(0,runs-A.r0)); // chaque course courue pour toi compte plus que le prix payé
-  return w*A.v*Math.exp(zK(A.v)*A.z*rev)+(1-w)*m}
+  return w*(A.vr||A.v*Math.exp(zK(A.v)*A.z*rev))+(1-w)*m}
 /* Bonne affaire ou payé trop cher ? Comparé au potentiel caché attendu pour ce prix, plus une part de chance. Reste secret. */
 function buyZ(h,price){const exp=91.5+4*Math.log(Math.max(2000,price)/40000);let z=.7*((h.g.pot-exp)/8)+.55*gauss();if(Math.random()<.05)z+=1.6; // de temps en temps, une vraie pépite
   return clamp(z,-2.3,2.9)}
 const zK=v=>v<30000?.62:v<100000?.55:.48; // les chevaux bon marché ont le plus de marge de surprise
-function buyVerdict(h){const A=h.anchor;if(!A||A.z==null)return '';const weeks=Math.max(0,(sunday()-A.d)/(7*DAY));const rev=1-Math.exp(-weeks/16);const e=A.z*rev;
+function buyVerdict(h){const A=h.anchor;if(A&&A.vr)return A.why||'Sa vraie valeur est connue.';if(!A||A.z==null)return '';const weeks=Math.max(0,(sunday()-A.d)/(7*DAY));const rev=1-Math.exp(-weeks/16);const e=A.z*rev;
   if(rev<.35)return 'Trop tôt pour savoir si ton achat était une bonne affaire : son entourage le découvre peu à peu.';
   return e>1.6?'Une vraie pépite : il vaut bien plus que ce que tu l\'as payé !':e>.7?'Il se révèle meilleur que prévu : tu l\'as payé moins cher qu\'il ne vaut.':e>.25?'Plutôt une bonne affaire pour l\'instant.':e<-.7?'Il déçoit son entourage : tu l\'as payé plus cher qu\'il ne vaut.':e<-.25?'Un peu payé cher, pour l\'instant.':'Payé à peu près son prix.'}
 function mktModel(h,d){
@@ -2109,7 +2115,7 @@ function renderTitle(){
       <button class="link" onclick="openTransfer(true)">Importer une partie</button>
     </div></div>`;
 }
-function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();save();applyReal();go(render)}
+function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();applyValeurs();save();applyReal();go(render)}
 
 /* ---------- Création ---------- */
 function renderSetup(){
@@ -2501,7 +2507,7 @@ function confirmDeclare(key,no,p){const id=`joueur-${key}-${no}`;S.applied=(S.ap
   REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push({_id:id,vente:key,lot:no,prixReel:p,decl:true});closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
 function fixDeclared(key,no,price){const l=S.lots[key].find(x=>x.no===no);const p=parseEur(price);if(!l||!l.real||!(p>=500))return alertMsg('Prix invalide.');
   const old=l.price,nw=p+PREMIUM,d=nw-old;if(!d)return closeSheet();if(l.buy)l.buy.paid=nw;addLog(`Correction du prix · lot ${lot3(no)}`,-d,'achats');l.price=nw;l.real.prixReel=p;const h=S.horses.find(x=>x.origin&&x.origin.endsWith('lot '+lot3(no))&&x.price===old);if(h)h.price=nw;save();closeSheet();alertMsg('Prix corrigé.')}
-function applyReal(){
+function applyReal(){setTimeout(()=>{try{applyValeurs();save()}catch(e){}},0);
   if(!S||!REAL.ready)return;S.applied=S.applied||[];let n=0;
   const bought=[];REAL.docs.forEach(d=>{
     if(S.applied.includes(d._id)||(S.cancelled||[]).includes(d._id)||!d.vente||!d.lot||!d.prixReel)return;
@@ -2820,6 +2826,11 @@ function cancelBuy(key,no){const l=S.lots[key].find(x=>x.no===no);if(!canCancel(
 
 /* Parties en cours : ancre les chevaux déjà achetés sur leur prix d'achat */
 function anchorOld(){(S.horses||[]).forEach(h=>{if(h.anchor||!h.price||!/lot/.test(h.origin||''))return;h.anchor={v:Math.max(1000,h.price-PREMIUM),d:sunday().getTime(),m0:mktModel(h)}})}
+
+/* Applique les valeurs réelles fixées par Claude (tableau VALEURS de real.js) */
+function applyValeurs(){if(typeof VALEURS==='undefined')return;ensureIrl();VALEURS.forEach(v=>{const h=S.horses.find(x=>x.irl&&(x.irl.key+'-'+x.irl.lot)===v.lot);if(!h)return;
+  if(!h.anchor)h.anchor={v:Math.max(1000,(h.price||v.valeur)-PREMIUM),d:sunday().getTime(),m0:mktModel(h)};
+  if(h.anchor.vr!==v.valeur){h.anchor.vr=v.valeur;h.anchor.why=v.pourquoi;if(v.pot&&h.g.pot<v.pot)h.g.pot=v.pot;news(`${disp(h)} : sa vraie valeur est estimée à ${eur(v.valeur)}.`,'sale')}})}
 
 /* ===================== TON PROPRE HARAS =====================
    Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
