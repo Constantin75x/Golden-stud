@@ -469,6 +469,12 @@ const AUT_LOTS=[[1, "H", "T", "Inmate", "Waldpfad", "Intimhir", "Bellemère"], [
 const ACHATS=[
 ];
 
+/* ===================== ÂGES CORRIGÉS =====================
+   Le catalogue enregistré ne donne pas l'année de naissance des juments : corrections connues. */
+const AGES=[
+ {lot:'autumn-2026-714',born:2021}, // Molly de Burge, 5 ans
+];
+
 /* ===================== VALEURS RÉELLES (fixées par Claude) =====================
    Pour un cheval acheté dont on connaît mieux la vraie valeur : { lot:'autumn-2026-495', valeur:45000, pot:95, pourquoi:'…' } */
 const VALEURS=[
@@ -856,7 +862,7 @@ function realHistory(h){
 const AUT_DAY=no=>no<=244?'Lun':no<=481?'Mar':no<=646?'Mer':'Jeu';
 function buildAutumn(){
   const where='Arqana Autumn Sale 2026';
-  return AUT_LOTS.map(([no,sx,kind,name,sire,dam,cons])=>{
+  return AUT_LOTS.map(row=>{let [no,sx,kind,name,sire,dam,cons]=row;let cover=null;if(row.length>=8){cover=row[6];cons=row[7]}const fx=(typeof AGES!=='undefined'?AGES:[]).find(a=>a.lot==='autumn-2026-'+no);
     let h;const o={name,sex:sx,sire,dam,origin:`${where} · lot ${no}`,status:'lot'};
     const nhG=(dq)=>{const g=makeGenes(sire,dq,2500*Math.exp(gauss()*.08),.9);g.jump=Math.max(g.jump,clamp(.72+gauss()*.1,.55,1));g.dist=Math.max(g.dist,2200);return g};
     if(kind==='T'){
@@ -875,8 +881,9 @@ function buildAutumn(){
     }else if(kind==='F'){
       h=newHorse(Object.assign(o,{name:'',sex:sx==='H'?'M':sx,born:2026,g:nhG(81+gauss()*7)}));h.yname=name;
     }else{
-      const age=5+rint(10);
-      h=newHorse(Object.assign(o,{sex:'F',born:2026-age,g:nhG(80+gauss()*7),bmare:true}));h.pregUnknown=true;
+      const age=fx?2026-fx.born:no<=244?3+rint(3):clamp(4+Math.floor(Math.abs(gauss())*4.5),4,16); // âge inconnu du catalogue enregistré : estimation
+      h=newHorse(Object.assign(o,{sex:'F',born:2026-age,g:nhG(80+gauss()*7),bmare:true}));h.ageEst=!fx;
+      if(cover&&cover!=='?'){h.preg={sire:cover,due:addDays(mkD(2027,1,1),rint(100)).getTime()}}else h.pregUnknown=true;
       if(Math.random()<.4){h.ORj=Math.round(h.g.pot*.95+gauss()*3);h.jruns=5+rint(10);h.jwins=1+rint(3);h.simulated=true}
     }
     const l=lotFromHorse(h,no,cons,kind,'autumn-2026');l.day=AUT_DAY(no);return l;
@@ -2115,7 +2122,7 @@ function renderTitle(){
       <button class="link" onclick="openTransfer(true)">Importer une partie</button>
     </div></div>`;
 }
-function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();applyValeurs();save();applyReal();go(render)}
+function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();fixAutumn();applyValeurs();save();applyReal();go(render)}
 
 /* ---------- Création ---------- */
 function renderSetup(){
@@ -2229,7 +2236,7 @@ function openHorse(id){
   if(h.broken===false)pref.push(['Débourrage',`${h.brk||0} semaines sur 6`]);
   const sk=sellKind(h);
   const upcoming=salesAround().filter(x=>x.s.sell.includes(sk)&&x.d>sunday()).slice(0,4);
-  let actions='';if(h.sex==='F'&&!h.preg&&(h.pregUnknown||h.status==='broodmare'&&!h.cover&&h.price))actions+=`<div class="panel"><span class="lbl">Gestation</span><p class="small">${h.pregUnknown?'Le jeu ne sait pas si elle est pleine.':'Elle est notée vide.'} Si elle est pleine (voir le catalogue), indique l'étalon :</p><input type="text" id="hpreg" list="sirelist2" placeholder="ex. Doctor Dino"><datalist id="sirelist2">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist><button class="btn ghost" onclick="setPreg(${h.id},$('#hpreg').value)">Elle est pleine</button>${h.pregUnknown?`<button class="btn ghost" onclick="setPreg(${h.id},'')">Elle est vide</button>`:''}</div>`;{const L=lotOfHorse(h);if(L)actions+=cancelBtn(L)}ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
+  let actions='';if(h.ageEst)actions+=`<div class="panel"><span class="lbl">Âge</span><p class="small">Son âge (${ageAt(h)} ans) est une estimation : le catalogue enregistré ne donnait pas son année de naissance. Corrige-la si tu la connais :</p><div class="declrow"><input type="text" inputmode="numeric" id="hborn" placeholder="Année de naissance, ex. 2021" value="${h.born}"><button class="btn ghost" onclick="setBorn(${h.id},$('#hborn').value)">Corriger</button></div></div>`;if(h.sex==='F'&&!h.preg&&(h.pregUnknown||h.status==='broodmare'&&!h.cover&&h.price))actions+=`<div class="panel"><span class="lbl">Gestation</span><p class="small">${h.pregUnknown?'Le jeu ne sait pas si elle est pleine.':'Elle est notée vide.'} Si elle est pleine (voir le catalogue), indique l'étalon :</p><input type="text" id="hpreg" list="sirelist2" placeholder="ex. Doctor Dino"><datalist id="sirelist2">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist><button class="btn ghost" onclick="setPreg(${h.id},$('#hpreg').value)">Elle est pleine</button>${h.pregUnknown?`<button class="btn ghost" onclick="setPreg(${h.id},'')">Elle est vide</button>`:''}</div>`;{const L=lotOfHorse(h);if(L)actions+=cancelBtn(L)}ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
   if(h.status==='training'||h.status==='repos'){
     actions+=`<label class="f"><span>Entraîneur</span>${trainerSelect(h,'trs')}</label><button class="btn ghost" onclick="setTrainer(${h.id})">${h.status==='repos'?'Remettre à l\'entraînement':'Changer d\'entraîneur'}</button>`;
     if(h.status==='training')actions+=`<button class="btn ghost" onclick="setStatus(${h.id},'repos')">Mettre au repos au haras</button>`;
@@ -2836,6 +2843,15 @@ function anchorOld(){(S.horses||[]).forEach(h=>{if(h.anchor||!h.price||!/lot/.te
 function applyValeurs(){if(typeof VALEURS==='undefined')return;ensureIrl();VALEURS.forEach(v=>{const h=S.horses.find(x=>x.irl&&(x.irl.key+'-'+x.irl.lot)===v.lot);if(!h)return;
   if(!h.anchor)h.anchor={v:Math.max(1000,(h.price||v.valeur)-PREMIUM),d:sunday().getTime(),m0:mktModel(h)};
   if(h.anchor.vr!==v.valeur){h.anchor.vr=v.valeur;h.anchor.why=v.pourquoi;if(v.pot&&h.g.pot<v.pot)h.g.pot=v.pot;news(`${disp(h)} : sa vraie valeur est estimée à ${eur(v.valeur)}.`,'sale')}})}
+
+/* Corrige une partie en cours : gestations du catalogue d'automne et âges connus */
+function fixAutumn(){const L=S.lots&&S.lots['autumn-2026'];if(!L)return;const V=S.autFix||0;
+  AUT_LOTS.forEach(row=>{if(row[2]!=='J')return;const no=row[0];const l=L.find(x=>x.no===no);const cover=row.length>=8?row[6]:null;const fx=AGES.find(a=>a.lot==='autumn-2026-'+no);
+    const hs=[l&&l.h,...S.horses.filter(h=>h.origin&&h.origin.endsWith('lot '+no)&&/Autumn/.test(h.origin))].filter(Boolean);
+    hs.forEach(h=>{if(V<1&&cover&&cover!=='?'&&!h.preg&&!h.foals?.length){h.preg={sire:cover,due:addDays(mkD(2027,1,1),rint(100)).getTime()};h.pregUnknown=false}
+      if(fx&&h.born!==fx.born){h.born=fx.born;h.ageEst=false}else if(V<1&&!fx&&!(S.horses.includes(h))&&h.born<2026-12&&no>244){h.born=2026-clamp(4+Math.floor(Math.abs(gauss())*4.5),4,16)}})});
+  S.autFix=1}
+function setBorn(id,y){const h=H(id);y=parseInt(y,10);if(!(y>1995&&y<=yearOf(sunday())))return alertMsg('Année invalide.');h.born=y;h.ageEst=false;save();closeSheet(true);openHorse(id);renderMain()}
 
 /* ===================== TON PROPRE HARAS =====================
    Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
