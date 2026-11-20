@@ -2292,7 +2292,7 @@ function horseCard(h){
 function jkFor(rid){const r=S.races[rid];const h=H(+$('#eh').value);const p=prefJk(h,r);if(p)$('#ej').value=p}
 function stableTabs(){return `<div class="opts filter seg">${[['horses','Mes chevaux'],['irl','Suivi réel'],['team','Équipe']].map(([k,n])=>`<button class="opt" aria-pressed="${(U.stv||'horses')===k}" onclick="U.stv='${k}';renderMain()">${n}</button>`).join('')}</div>`}
 function viewStable(){if(U.stv==='irl')return `${tag('Écurie')}<h2>Suivi en vrai</h2>${stableTabs()}${viewSuivi()}`;if(U.stv==='team')return `${tag('Écurie')}<h2>Mon équipe</h2>${stableTabs()}${viewTeam()}`;
-  const grp=[['training','À l\'entraînement'],['repos','Au repos'],['haras','Jeunes au haras'],['broodmare','Poulinières'],['stallion','Étalons']];
+  const grp=[['training','À l\'entraînement'],['debourrage','Au débourrage'],['repos','Au repos'],['haras','Jeunes au haras'],['broodmare','Poulinières'],['stallion','Étalons']];
   if(!S.horses.length)return `${tag('Écurie')}<h2>Aucun cheval</h2>${stableTabs()}<div class="panel"><p>Ton écurie est vide. Les catalogues Arqana t'attendent.</p><button class="btn" onclick="U.tab='sales';go(renderMain)">Voir les ventes</button></div>`;
   return `${tag('Écurie')}<h2>${S.horses.length} cheva${S.horses.length>1?'ux':'l'}</h2>${stableTabs()}`+grp.map(([k,n])=>{const l=S.horses.filter(h=>h.status===k);return l.length?`<span class="lbl">${n} · ${l.length}</span><div class="grid">${l.map(horseCard).join('')}</div>`:''}).join('')+
   (S.past.length?`<details class="panel"><summary class="lbl">Anciens chevaux · ${S.past.length}</summary>${S.past.slice(0,30).map(p=>`<p class="muted">${esc(p.name)} · ${esc(p.why)} · ${fd(p.d,{month:'short',year:'numeric'})}</p>`).join('')}</details>`:'');
