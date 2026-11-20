@@ -1230,7 +1230,7 @@ function advanceWeek(){
   S.horses.slice().forEach(h=>{
     const age=ageAt(h);
     if(h.inj>0){h.inj--;if(!h.inj&&h.status==='training')news(`${disp(h)} a repris l'entraînement.`)}
-    breakingWeek(h);
+    breakingWeek(h,!RT_ON());
     if(h.status==='training'){
       const t=T(h.trainer);const raced=h.lastRun===S.wk;const P=PLANS[h.plan||'normal'];
       if(!raced){if(h.inj)h.fit=Math.max(40,h.fit-3);else if(P.fit>0)h.fit=Math.min(P.cap,h.fit+P.fit);else h.fit=Math.max(55,h.fit+P.fit)}
@@ -2318,11 +2318,11 @@ function openHorse(id){
   if(h.known.fresh)pref.push(['Après une coupure',h.g.fresh>.5?'Court très bien frais':h.g.fresh<-.5?'A besoin d\'une course de rentrée':'Indifférent']);
   if(h.known.fav)pref.push(['Hippodrome préféré',h.g.fav]);
   if(h.status==='training'&&recentRuns(h)>=3)pref.push(['Fatigue',`${recentRuns(h)} courses en 6 semaines : il a besoin de souffler`]);
-  if(h.broken===false)pref.push(['Débourrage',`${h.brk||0} semaines sur 6${h.status==='debourrage'?(h.brkWhere==='home'?' · chez toi':' · chez un débourreur')+' · '+eur(brkCostMonth(h))+'/mois'+(h.nextTr?' · puis '+T(h.nextTr).n:''):''}`]);
+  if(h.broken===false)pref.push(['Débourrage',`${h.status==='debourrage'?brkDays(h):0} jours sur 6${h.status==='debourrage'?(h.brkWhere==='home'?' · chez toi':' · chez un débourreur')+' · '+eur(brkCostMonth(h))+'/mois'+(h.nextTr?' · puis '+T(h.nextTr).n:''):''}`]);
   const sk=sellKind(h);
   const upcoming=salesAround().filter(x=>x.s.sell.includes(sk)&&x.d>sunday()).slice(0,4);
   let actions='';if(h.ageEst)actions+=`<div class="panel"><span class="lbl">Âge</span><p class="small">Son âge (${ageAt(h)} ans) est une estimation : le catalogue enregistré ne donnait pas son année de naissance. Corrige-la si tu la connais :</p><div class="declrow"><input type="text" inputmode="numeric" id="hborn" placeholder="Année de naissance, ex. 2021" value="${h.born}"><button class="btn ghost" onclick="setBorn(${h.id},$('#hborn').value)">Corriger</button></div></div>`;if(h.sex==='F'&&!h.preg&&(h.pregUnknown||h.status==='broodmare'&&!h.cover&&h.price))actions+=`<div class="panel"><span class="lbl">Gestation</span><p class="small">${h.pregUnknown?'Le jeu ne sait pas si elle est pleine.':'Elle est notée vide.'} Si elle est pleine (voir le catalogue), indique l'étalon :</p><input type="text" id="hpreg" list="sirelist2" placeholder="ex. Doctor Dino"><datalist id="sirelist2">${Object.keys(SIRE).sort().map(n=>`<option value="${esc(n)}">`).join('')}</datalist><button class="btn ghost" onclick="setPreg(${h.id},$('#hpreg').value)">Elle est pleine</button>${h.pregUnknown?`<button class="btn ghost" onclick="setPreg(${h.id},'')">Elle est vide</button>`:''}</div>`;{const L=lotOfHorse(h);if(L)actions+=cancelBtn(L)}ensureIrl();if(h.irl)actions+=`<button class="btn" onclick="openIrl(${h.id})">Suivi en vrai</button>`;
-  if(h.status==='debourrage'){const F=typeof farmOf==='function'&&farmOf();actions+=`<div class="panel"><span class="lbl">Débourrage · ${h.brk||0}/6 semaines</span><p class="small">Selle, filet, longe, premiers canters. Ensuite il part chez son entraîneur.</p>
+  if(h.status==='debourrage'){const F=typeof farmOf==='function'&&farmOf();actions+=`<div class="panel"><span class="lbl">Débourrage · ${brkDays(h)}/6 jours</span><p class="small">Selle, filet, longe, premiers canters. Ensuite il part chez son entraîneur.</p>
     <div class="opts filter"><button class="opt" aria-pressed="${h.brkWhere!=='home'}" onclick="setBrkWhere(${h.id},'pro')">Chez un débourreur · ${eur(BRK_PRO)}/mois</button>${F?`<button class="opt" aria-pressed="${h.brkWhere==='home'}" onclick="setBrkWhere(${h.id},'home')">Chez toi · ${eur(perEff(F)+(fac().rond?150:300))}/mois</button>`:''}</div>
     <label class="f"><span>Entraîneur prévu ensuite</span>${trainerSelect(h,'trs')}</label><button class="btn ghost" onclick="H(${h.id}).nextTr=$('#trs').value;save();alertMsg('Noté.')">Enregistrer</button></div>`}
   if(h.status==='training'||h.status==='repos'){
@@ -2373,7 +2373,7 @@ function breedBtn(h){const a=ageAt(h);
 function toBreed(id){const h=H(id);confirmBox(h.sex==='F'?`Arrêter la carrière de <b>${esc(h.name)}</b> pour qu'elle devienne poulinière au haras ?`:`Arrêter la carrière de <b>${esc(h.name)}</b> pour qu'il fasse la monte comme étalon ?`,'Confirmer',()=>retire(id))}
 function setTrainer(id){const h=H(id),v=$('#trs').value;if(!v){alertMsg('Choisis un entraîneur.');return}
   if(h.status==='haras'&&!h.name){alertMsg('Baptise ton cheval avant de l\'envoyer à l\'entraînement.');return}
-  if(h.broken===false&&h.status!=='training'){toBreaking(h,v);save();closeSheet(true);renderMain();alertMsg(`Il part d'abord 6 semaines au débourrage, puis rejoindra ${T(v).n}.`);return}
+  if(h.broken===false&&h.status!=='training'){toBreaking(h,v);save();closeSheet(true);renderMain();alertMsg(`Il part d'abord 6 jours au débourrage, puis rejoindra ${T(v).n}.`);return}
   const was=h.trainer;h.trainer=v;h.status='training';if(was&&was!==v){h.fit=Math.max(40,h.fit-15);const nt=T(v);if(!nt.d.includes('O'))h.school=Math.min(h.school,h.school>=4?4:0)}
   news(`${disp(h)} rejoint l'écurie de ${T(v).n}.`);save();closeSheet();renderMain()}
 function setTarget(id,v){H(id).target=v||null;save();const q=()=>sheet.querySelector('.sh-in');const st=q().scrollTop;openHorse(id);q().scrollTop=st}
@@ -2828,7 +2828,7 @@ function setPreg(id,sire){const h=H(id);sire=(sire||'').trim();h.pregUnknown=fal
   save();closeSheet(true);openHorse(id);renderMain()}
 
 /* Temps réel : mise à jour du programme, courses dues, semaines écoulées */
-function rtTick(first){if(!S)return;let k=0;
+function rtTick(first){if(!S)return;let k=0;checkBreaking();
   if(RT_ON()){refreshRealWeek();const d=runDueRealRaces();
     while(rtCanAdvance()&&realToday()>=now().getTime()+7*DAY&&k<8){advanceWeek();k++;refreshRealWeek()}
     save();if(d.length&&!first){U.screen='results';go(render);return}if(d.length||k){U.screen='results';go(render);return}}
@@ -3105,18 +3105,21 @@ function buildBoxes(){const F=farmOf();const room=Math.max(0,Math.floor(farmHa()
   addLog(`Construction de ${v} boxes · ${S.farm.name}`,-c,'achats');news(`${v} nouveaux boxes au ${S.farm.name}.`,'sale');save();renderMain()}
 
 /* ===================== DÉBOURRAGE AVANT L'ENTRAÎNEMENT =====================
-   Comme en vrai : un jeune cheval est d'abord débourré (6 semaines), chez un débourreur
+   Comme en vrai : un jeune cheval est d'abord débourré (6 jours), chez un débourreur
    ou chez toi si tu as ton haras, puis il part chez son entraîneur. */
 const BRK_PRO=1200; // débourreur professionnel, par mois
+const BRK_DAYS=6;   // durée du débourrage, en vrais jours
+const brkDays=h=>Math.min(BRK_DAYS,Math.floor((Date.now()-(h.brkT||Date.now()))/864e5));
 STATUS.debourrage='Au débourrage';
 function brkCostMonth(h){const F=typeof farmOf==='function'&&farmOf();if(h.brkWhere==='home'&&F)return perEff(F)+(fac().rond?150:300);return BRK_PRO}
 /* Envoyer chez un entraîneur un cheval pas encore débourré : il passe d'abord au débourrage */
-function toBreaking(h,tid,where){const F=typeof farmOf==='function'&&farmOf();h.nextTr=tid||h.nextTr||null;h.brkWhere=where||(F&&fac().rond?'home':'pro');h.status='debourrage';h.brk=h.brk||0;
+function toBreaking(h,tid,where){const F=typeof farmOf==='function'&&farmOf();h.nextTr=tid||h.nextTr||null;h.brkWhere=where||(F&&fac().rond?'home':'pro');h.status='debourrage';h.brkT=h.brkT||Date.now();
   news(`${disp(h)} part au débourrage ${h.brkWhere==='home'?'au '+S.farm.name:'chez un débourreur'} (6 semaines)${h.nextTr?`, puis rejoindra ${T(h.nextTr).n}`:''}.`,'info')}
-function breakingWeek(h){if(h.status!=='debourrage')return;h.brk=(h.brk||0)+1;
-  if(h.brk>=6){h.broken=true;if(h.nextTr&&T(h.nextTr)){h.trainer=h.nextTr;h.status='training';h.fit=Math.max(h.fit||50,55);news(`${disp(h)} est débourré : il rejoint l'écurie de ${T(h.trainer).n}.`,'info')}else{h.status='repos';news(`${disp(h)} est débourré : choisis-lui un entraîneur.`,'info')}delete h.nextTr}}
+function breakingWeek(h,force){if(h.status!=='debourrage')return;if(!h.brkT)h.brkT=Date.now();
+  if(force||brkDays(h)>=BRK_DAYS){h.broken=true;if(h.nextTr&&T(h.nextTr)){h.trainer=h.nextTr;h.status='training';h.fit=Math.max(h.fit||50,55);news(`${disp(h)} est débourré : il rejoint l'écurie de ${T(h.trainer).n}.`,'info')}else{h.status='repos';news(`${disp(h)} est débourré : choisis-lui un entraîneur.`,'info')}delete h.nextTr}}
 /* Parties en cours : les chevaux « à l'entraînement » pas encore débourrés passent au débourrage */
-function fixBreaking(){(S.horses||[]).forEach(h=>{if(h.status==='training'&&h.broken===false){h.nextTr=h.trainer;h.brkWhere=h.brkWhere||'pro';h.status='debourrage'}})}
+function fixBreaking(){(S.horses||[]).forEach(h=>{if(h.status==='training'&&h.broken===false){h.nextTr=h.trainer;h.brkWhere=h.brkWhere||'pro';h.status='debourrage'}if(h.status==='debourrage'&&!h.brkT)h.brkT=Date.now()})}
+function checkBreaking(){let n=0;(S.horses||[]).forEach(h=>{if(h.status==='debourrage'&&brkDays(h)>=BRK_DAYS){breakingWeek(h);n++}});if(n)save();return n}
 function setBrkWhere(id,w){const h=H(id);h.brkWhere=w;save();closeSheet(true);openHorse(id);renderMain()}
 
 </script>
