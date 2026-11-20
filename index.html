@@ -479,6 +479,11 @@ const AGES=[
  {lot:'autumn-2026-714',born:2021}, // Molly de Burge, 5 ans
 ];
 
+/* ===================== GESTATIONS CONNUES (d'après la fiche Arqana) ===================== */
+const PLEINES=[
+ {lot:'autumn-2026-714',sire:'Masked Marvel'}, // Molly de Burge
+];
+
 /* ===================== VALEURS RÉELLES (fixées par Claude) =====================
    Pour un cheval acheté dont on connaît mieux la vraie valeur : { lot:'autumn-2026-495', valeur:45000, pot:95, pourquoi:'…' } */
 const VALEURS=[
@@ -2126,7 +2131,7 @@ function renderTitle(){
       <button class="link" onclick="openTransfer(true)">Importer une partie</button>
     </div></div>`;
 }
-function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();fixAutumn();applyValeurs();save();applyReal();go(render)}
+function resume(){S=load();U.screen='main';U.tab='home';migrateProgram();anchorOld();fixAutumn();applyPleines();applyValeurs();save();applyReal();go(render)}
 
 /* ---------- Création ---------- */
 function renderSetup(){
@@ -2519,7 +2524,7 @@ function confirmDeclare(key,no,p,preg,born){const id=`joueur-${key}-${no}`;S.app
   REAL.docs=REAL.docs.filter(d=>d._id!==id);REAL.docs.push(Object.assign({_id:id,vente:key,lot:no,prixReel:p,decl:true},preg!=null?{pleineDe:preg}:{},born?{ne:born}:{}));closeSheet(true);applyReal();save();if(U.screen==='main')renderMain()}
 function fixDeclared(key,no,price){const l=S.lots[key].find(x=>x.no===no);const p=parseEur(price);if(!l||!l.real||!(p>=500))return alertMsg('Prix invalide.');
   const old=l.price,nw=p+PREMIUM,d=nw-old;if(!d)return closeSheet();if(l.buy)l.buy.paid=nw;addLog(`Correction du prix · lot ${lot3(no)}`,-d,'achats');l.price=nw;l.real.prixReel=p;const h=S.horses.find(x=>x.origin&&x.origin.endsWith('lot '+lot3(no))&&x.price===old);if(h)h.price=nw;save();closeSheet();alertMsg('Prix corrigé.')}
-function applyReal(){setTimeout(()=>{try{applyValeurs();save()}catch(e){}},0);
+function applyReal(){setTimeout(()=>{try{applyPleines();applyValeurs();save()}catch(e){}},0);
   if(!S||!REAL.ready)return;S.applied=S.applied||[];let n=0;
   const bought=[];REAL.docs.forEach(d=>{
     if(S.applied.includes(d._id)||(S.cancelled||[]).includes(d._id)||!d.vente||!d.lot||!d.prixReel)return;
@@ -2857,6 +2862,11 @@ function fixAutumn(){const L=S.lots&&S.lots['autumn-2026'];if(!L)return;const V=
       if(fx&&h.born!==fx.born){h.born=fx.born;h.ageEst=false}else if(V<1&&!fx&&!(S.horses.includes(h))&&h.born<2026-12&&no>244){h.born=2026-clamp(4+Math.floor(Math.abs(gauss())*4.5),4,16)}})});
   S.autFix=1}
 function setBorn(id,y){const h=H(id);y=parseInt(y,10);if(!(y>1995&&y<=yearOf(sunday())))return alertMsg('Année invalide.');h.born=y;h.ageEst=false;save();closeSheet(true);openHorse(id);renderMain()}
+
+function applyPleines(){if(typeof PLEINES==='undefined')return;PLEINES.forEach(p=>{const [k,no]=[p.lot.replace(/-\d+$/,''),+p.lot.split('-').pop()];
+  const l=(S.lots&&S.lots[k]||[]).find(x=>x.no===no);const hs=[l&&l.status!=='mine'?l.h:null,...S.horses.filter(h=>(h.irl&&h.irl.key===k&&h.irl.lot===no)||(h.origin&&h.origin.endsWith('lot '+no)&&/Autumn/.test(h.origin)))].filter(Boolean);
+  hs.forEach(h=>{if(h.preg&&h.preg.sire===p.sire)return;if((h.foals||[]).length&&!h.preg&&!h.pregUnknown)return;
+    h.preg={sire:p.sire,due:(h.preg&&h.preg.due)||addDays(mkD(2027,1,1),rint(100)).getTime()};h.pregUnknown=false;if(S.horses.includes(h))news(`${disp(h)} est bien pleine de ${p.sire}.`,'breed')})})}
 
 /* ===================== TON PROPRE HARAS =====================
    Acheter un domaine : pension moins chère pour les chevaux qui y vivent (dans la limite des boxes),
