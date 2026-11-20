@@ -718,6 +718,9 @@ const COATS=[['bai','#6b3a1e','#47250f'],['alezan','#a0521f','#6c3412'],['gris',
 const GOING=[['Bon',-.6],['Bon souple',-.2],['Souple',.2],['Très souple',.5],['Collant',.75],['Lourd',1]];
 const SHARE=[.5714,.2286,.1143,.0571,.0286];
 
+/* Vrais chevaux vus au départ des courses (mis à jour chaque jour) : [nom, discipline P/H/S, niveau estimé, année de naissance, sexe, pays, vu le] */
+var REALPOOL=[["Toocooltobecool", "P", 56, 2024, "", "FR", "2026-11-20"], ["Fleur Céleste", "P", 56, 2024, "", "FR", "2026-11-20"], ["El Teleno", "P", 56, 2024, "", "FR", "2026-11-20"], ["Opium Of Success", "P", 56, 2024, "", "FR", "2026-11-20"], ["Zelvaggia", "P", 56, 2024, "", "FR", "2026-11-20"], ["Woodhama", "P", 56, 2024, "", "FR", "2026-11-20"], ["Bazouka", "P", 56, 2024, "", "FR", "2026-11-20"], ["Kukinha", "P", 56, 2024, "", "FR", "2026-11-20"], ["Naad'in", "P", 56, 2024, "", "FR", "2026-11-20"], ["Nous Autres", "H", 78, 2023, "", "FR", "2026-11-20"], ["Not Yet", "H", 78, 2023, "", "FR", "2026-11-20"], ["Don't Stop de Grez", "H", 78, 2023, "", "FR", "2026-11-20"], ["Noah Tahoe", "H", 78, 2023, "", "FR", "2026-11-20"], ["Colescott", "H", 78, 2023, "", "FR", "2026-11-20"], ["Natty Dread", "H", 78, 2023, "", "FR", "2026-11-20"], ["Mayza", "H", 78, 2023, "", "FR", "2026-11-20"], ["Yezalel", "H", 78, 2023, "", "FR", "2026-11-20"], ["Spes Milame", "H", 78, 2023, "", "FR", "2026-11-20"], ["Nosika Grandchamp", "H", 78, 2023, "", "FR", "2026-11-20"], ["Alexei", "P", 54, 2021, "", "FR", "2026-11-20"], ["Dadas Boy", "P", 54, 2021, "", "FR", "2026-11-20"], ["Teranga", "P", 54, 2021, "", "FR", "2026-11-20"], ["Wathab", "P", 54, 2021, "", "FR", "2026-11-20"], ["Nurture", "P", 54, 2021, "", "FR", "2026-11-20"], ["Frégate", "P", 54, 2021, "", "FR", "2026-11-20"], ["Hurlevent", "P", 54, 2021, "", "FR", "2026-11-20"], ["Rosadora", "P", 54, 2021, "", "FR", "2026-11-20"], ["Chunka Wakan", "P", 54, 2021, "", "FR", "2026-11-20"], ["Fleur d'Aquitaine", "P", 54, 2021, "", "FR", "2026-11-20"], ["Marquise Vera", "P", 54, 2021, "", "FR", "2026-11-20"], ["Royal Ninian", "P", 54, 2021, "", "FR", "2026-11-20"], ["Moonziknuit", "P", 58, 2023, "", "FR", "2026-11-20"], ["Wite Toast", "P", 58, 2023, "", "FR", "2026-11-20"], ["Solikhiev", "P", 58, 2023, "", "FR", "2026-11-20"], ["Merle", "P", 58, 2023, "", "FR", "2026-11-20"], ["Lightning Girl", "P", 58, 2023, "", "FR", "2026-11-20"], ["Simply Game", "P", 58, 2023, "", "FR", "2026-11-20"], ["Moustique", "P", 58, 2023, "", "FR", "2026-11-20"], ["Torona Rainbow", "P", 58, 2023, "", "FR", "2026-11-20"], ["Ivawai", "P", 58, 2023, "", "FR", "2026-11-20"], ["La Almadia", "P", 58, 2023, "", "FR", "2026-11-20"], ["Enbakirun", "P", 58, 2023, "", "FR", "2026-11-20"], ["Shera", "P", 58, 2023, "", "FR", "2026-11-20"], ["The Pyrenees", "P", 60, 2024, "", "FR", "2026-11-20"], ["Dryas", "P", 60, 2024, "", "FR", "2026-11-20"], ["Monsieur Charlie", "P", 60, 2024, "", "FR", "2026-11-20"], ["No Tie", "P", 60, 2024, "", "FR", "2026-11-20"], ["All Black", "P", 60, 2024, "", "FR", "2026-11-20"], ["Tolomeih", "P", 60, 2024, "", "FR", "2026-11-20"], ["Irish Legend Jr", "P", 60, 2024, "", "FR", "2026-11-20"], ["Liker", "P", 60, 2024, "", "FR", "2026-11-20"], ["Nabira", "P", 60, 2024, "", "FR", "2026-11-20"], ["La Suissesse", "P", 60, 2024, "", "FR", "2026-11-20"], ["Cherry Chilli", "P", 60, 2024, "", "FR", "2026-11-20"], ["Societyqueen", "P", 60, 2024, "", "FR", "2026-11-20"], ["Snejinskha", "P", 60, 2024, "", "FR", "2026-11-20"], ["Avid Interest", "P", 60, 2024, "", "FR", "2026-11-20"], ["Queen of Diamonds", "P", 60, 2024, "", "FR", "2026-11-20"], ["Dear Aunt Lucy", "P", 60, 2024, "", "FR", "2026-11-20"], ["Juicy Lucy", "P", 60, 2024, "", "FR", "2026-11-20"], ["Dolorosa", "P", 60, 2024, "", "FR", "2026-11-20"], ["Assereje", "P", 60, 2024, "", "FR", "2026-11-20"], ["Wykehurst Park", "P", 94, 2024, "", "FR", "2026-11-20"], ["Alias", "P", 94, 2024, "", "FR", "2026-11-20"], ["Timide", "P", 94, 2024, "", "FR", "2026-11-20"], ["Tosca No Candis", "P", 94, 2024, "", "FR", "2026-11-20"], ["Coral Cove", "P", 94, 2024, "", "FR", "2026-11-20"], ["Elroma", "P", 94, 2024, "", "FR", "2026-11-20"], ["Perito", "P", 62, 2023, "", "FR", "2026-11-20"], ["Me Me Myself And I", "P", 62, 2023, "", "FR", "2026-11-20"], ["Baristo", "P", 62, 2023, "", "FR", "2026-11-20"], ["Agnesi", "P", 62, 2023, "", "FR", "2026-11-20"], ["Winter's Way", "P", 62, 2023, "", "FR", "2026-11-20"], ["Golden Friend", "P", 62, 2023, "", "FR", "2026-11-20"], ["Budokan", "P", 62, 2023, "", "FR", "2026-11-20"], ["Zeudi", "P", 62, 2023, "", "FR", "2026-11-20"], ["Wilela", "P", 62, 2023, "", "FR", "2026-11-20"], ["Situla", "P", 62, 2023, "", "FR", "2026-11-20"], ["Flash d'Arco", "P", 62, 2023, "", "FR", "2026-11-20"], ["Country Club", "P", 62, 2023, "", "FR", "2026-11-20"], ["Zidane Doré", "P", 62, 2023, "", "FR", "2026-11-20"], ["Calvados Dubois", "P", 62, 2023, "", "FR", "2026-11-20"], ["Les Regates", "P", 62, 2023, "", "FR", "2026-11-20"], ["Lightass Fal", "P", 62, 2023, "", "FR", "2026-11-20"], ["James de Baune", "S", 71, 2020, "", "FR", "2026-11-20"], ["Super Flam", "S", 71, 2020, "", "FR", "2026-11-20"], ["Helsinki Nolimit", "S", 71, 2020, "", "FR", "2026-11-20"], ["Soisfranc", "S", 71, 2020, "", "FR", "2026-11-20"], ["Magic Davier", "S", 71, 2020, "", "FR", "2026-11-20"], ["Kastle Pontadour", "S", 71, 2020, "", "FR", "2026-11-20"], ["Inside Montlioux", "S", 71, 2020, "", "FR", "2026-11-20"], ["Le Caule", "S", 71, 2020, "", "FR", "2026-11-20"], ["Klovis du Lin", "S", 71, 2020, "", "FR", "2026-11-20"]];
+
 /* ===================== MOTEUR ===================== */
 const DAY=864e5;
 const mkD=(y,m,d)=>new Date(Date.UTC(y,m,d));
@@ -969,7 +972,7 @@ const CLO={MA:{l:'Débutants',lvl:72,tot:22000},RE:{l:'Réclamer',lvl:62,tot:150
 const CLRK={MA:0,RE:0,HA:1,C2:1,C1:1,L:2,G3:3,G2:4,G1:6};
 const discLab={P:'Plat',H:'Haies',S:'Steeple-chase',C:'Cross-country'};
 function goingFor(m,surf){if(surf==='PSF')return ['PSF',-.4];const s=seasonOf(m);const w={w:[0,1,3,3,2,2],sp:[1,3,3,2,1,.5],su:[3,3,2,1,.3,.2],au:[1,2,3,2,1,1]}[s];const i=+wpick(Object.fromEntries(w.map((x,i)=>[i,x])));return GOING[i]}
-function genWeek(){S.races=buildProgram();S.progV=2;S.claims=[];genAds()}
+function genWeek(){if(typeof trimPoolUse==='function')trimPoolUse();S.races=buildProgram();S.progV=2;S.claims=[];genAds()}
 function genAds(){
   const out=[];const n=3+rint(3);const flat=Object.keys(SIRE).filter(k=>sireJ(k)<.55),nh=Object.keys(SIRE).filter(k=>sireJ(k)>=.6);
   for(let i=0;i<n;i++){const jump=Math.random()<.35;const sire=pick(jump?nh:flat);const age=jump?3+rint(5):2+rint(4);
@@ -1072,11 +1075,11 @@ function ensureField(r){
     F.push({name:c.n,real:c,sire:'',silk:silkRand(),ci:rint(5),OR:v,tr:v-Math.abs(Math.log2(r.d/c.dist))*10,mental:.85,jks:jk&&!taken?jk.skill:.8,jk:c.j&&!taken?c.j:(alt[0]?alt[0].n:''),sty:Math.random(),age})});
   const sd=r.c==='G1'?3:r.c[0]==='G'||r.c==='L'?3.5:4.5;
   const ageFor=()=>({'2':2,'3':3,'4':4,'2+':2+rint(4),'3+':3+rint(3),'4+':4+rint(3),'5+':5+rint(4)}[r.age]||4);
-  for(let i=F.length;i<nO;i++){let n;do n=X?oppNameX():OPPN();while(names.has(n));names.add(n);
+  for(let i=F.length;i<nO;i++){let n;const pe=poolPick(r,names);if(pe)n=pe[0];else do n=X?oppNameX():OPPN();while(names.has(n));names.add(n);
     const left=jpool.filter(q=>!F.some(f=>f.jk===q.n));const j=left.length?left[Math.min(left.length-1,Math.floor(Math.pow(Math.random(),1.4)*left.length))]:{n:'',skill:.35};
     const OR=r.band?rand(r.band[0],r.band[1]):null;
-    const tr=r.band?OR+gauss()*3:r.lvl+gauss()*sd;
-    F.push({name:n,sire:pick(sires),silk:silkRand(),ci:rint(5),OR:OR==null?tr:OR,tr:tr-Math.abs(gauss())*1.5,mental:clamp(.65+gauss()*.15,.3,1),jks:j.skill,jk:j.n,sty:Math.random(),age:ageFor(),sex:r.sex||pick(['M','F','H'])});}
+    const tr=r.band?OR+gauss()*3:pe?pe[2]+gauss()*3:r.lvl+gauss()*sd;
+    F.push({name:n,sire:pick(sires),silk:silkRand(),ci:rint(5),OR:OR==null?tr:OR,tr:tr-Math.abs(gauss())*1.5,mental:clamp(.65+gauss()*.15,.3,1),jks:j.skill,jk:j.n,sty:Math.random(),age:pe?yearOf(new Date(r.date))-pe[3]:ageFor(),sex:r.sex||(pe&&pe[4])||pick(['M','F','H']),real:!!pe});}
   r.field=F;return F;
 }
 function oppBase(f,r){return f.tr+(f.jks*3-1.5)-(r.band?(f.OR-r.lvl)*WADJ:0)}
@@ -1649,6 +1652,18 @@ const distTxt=r=>`${r.d.toLocaleString('fr-FR')} m${['GB','IE','US'].includes(r.
 const flag=c=>`<span class="cty cty-${(c||'FR').toLowerCase()}">${CTY[c||'FR'].f}</span>`;
 const usd=r=>r.cty==='US'?` (≈ $${(Math.round(r.tot/0.87/1000)*1000).toLocaleString('fr-FR')})`:'';
 const gbp=r=>r.cty==='US'?usd(r):r.cty==='GB'?` (≈ £${(Math.round(r.tot/G/100)*100).toLocaleString('fr-FR')})`:'';
+
+/* ===================== VRAIS CHEVAUX AU DÉPART =====================
+   REALPOOL (chevaux.js) : chevaux réellement partants dans de vraies courses, mis à jour chaque jour.
+   Pour chaque course du jeu, on choisit d'abord de vrais chevaux du même pays, de la même discipline,
+   de l'âge et du niveau qui conviennent ; un même cheval ne court pas deux fois le même jour.
+   Les noms inventés ne servent qu'en dernier recours. */
+function poolPick(r,names){const P=(typeof window!=='undefined'&&window.REALPOOL)||(typeof REALPOOL!=='undefined'?REALPOOL:[]);if(!P.length)return null;
+  const c=r.cty||'FR',jump=r.disc!=='P',y=yearOf(new Date(r.date));const tgt=r.band?(r.band[0]+r.band[1])/2:r.lvl;const use=S.poolUse||(S.poolUse={});
+  const m=String(r.age||'3+').match(/(\d+)(\+?)/);const a0=m?+m[1]:3,plus=m&&m[2]==='+';
+  const C=P.filter(e=>e[5]===c&&(jump?e[1]!=='P':e[1]==='P')&&!names.has(e[0])&&use[e[0]]!==r.date&&(plus?y-e[3]>=a0:y-e[3]===a0)&&Math.abs(e[2]-tgt)<=10&&(!r.sex||!e[4]||e[4]===r.sex));
+  if(!C.length)return null;const w={};C.forEach((e,i)=>w[i]=1/(1+Math.abs(e[2]-tgt)));const e=C[+wpick(w)];use[e[0]]=r.date;return e}
+function trimPoolUse(){const u=S.poolUse;if(!u)return;const lim=now().getTime()-14*DAY;for(const k in u)if(u[k]<lim)delete u[k]}
 
 /* ===================== ILLUSTRATIONS ===================== */
 /* Portrait de cheval de profil (tête à droite), robe, marques, couverture aux couleurs de la casaque. */
@@ -3014,5 +3029,6 @@ function buildBoxes(){const F=farmOf();const room=Math.max(0,Math.floor(farmHa()
 
 </script>
 
+<script src="chevaux.js" async></script>
 <script>if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}</script>
 </body></html>
