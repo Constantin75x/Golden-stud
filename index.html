@@ -1295,8 +1295,11 @@ function trainerReport(h,t,raced){
   if(h.fit>=92)return `${tn} : « Il est affûté, prêt à courir. ${pick(['Il a très bien galopé mardi.','Il a fait un bon travail sur la piste des Aigles.','Il respire bien, on peut y aller.'])} »`;
   return `${tn} : « Il progresse${h.fit>=80?', encore une petite semaine et il sera prêt':''}. »`;
 }
+/* Galop d'essai : un tous les 4 jours (vrais jours en mode temps réel), une fois par semaine en mode rapide */
+const TRIAL_MS=4*864e5;
+function trialWait(h){if(!RT_ON())return h.lastWork===S.wk?1:0;return Math.max(0,(h.trialT||0)+TRIAL_MS-Date.now())}
 function trialGallop(h){
-  const t=T(h.trainer);const est=h.cur-(100-h.fit)*.12+gauss()*3;h.lastWork=S.wk;h.fit=Math.max(30,h.fit-3);
+  const t=T(h.trainer);const est=h.cur-(100-h.fit)*.12+gauss()*3;h.lastWork=S.wk;h.trialT=Date.now();h.fit=Math.max(30,h.fit-3);
   const mate=Math.round(est+gauss()*4);
   const what=isFinite(est)?(est>=110?'Il a impressionné tout le monde':est>=98?'Excellent travail':est>=85?'Bon travail':est>=72?'Travail correct':'Travail laborieux'):'';
   return `${what} sur ${h.g.jump>.6&&h.school>=4?'les obstacles d\'entraînement':'1 400 m en ligne droite'}, à côté d'un compagnon de valeur ${kg(mate)}. Niveau estimé : ${levelLabel(est).toLowerCase()} (valeur ≈ ${kg(est)}).`;
@@ -2359,7 +2362,7 @@ function openHorse(id){
     ${h.target?`<p class="small">${targetAdvice(h)}</p>`:''}
     <label class="f"><span>Programme de la semaine</span><select id="plan" onchange="setPlan(${h.id},this.value)">${Object.entries(PLANS).map(([k,p])=>`<option value="${k}" ${(h.plan||'normal')===k?'selected':''}>${p.l}</option>`).join('')}</select></label>
     <p class="small muted">${PLANS[h.plan||'normal'].d}</p>
-    ${h.trial&&h.lastWork===S.wk?`<p class="quote">${esc(h.trial)}</p>`:`<button class="btn ghost" onclick="doTrial(${h.id})" ${h.inj||h.lastWork===S.wk?'disabled':''}>Demander un galop d'essai</button>`}
+    ${h.trial&&(h.trialT||h.lastWork===S.wk)?`<p class="quote">${esc(h.trial)}${h.trialT?`<br><small class="muted">Galop du ${new Date(h.trialT).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</small>`:''}</p>`:''}${trialWait(h)?`<p class="small muted">Prochain galop d'essai possible ${RT_ON()?'dans '+Math.ceil(trialWait(h)/864e5)+' jour'+(Math.ceil(trialWait(h)/864e5)>1?'s':''):'la semaine prochaine'}.</p>`:`<button class="btn ghost" onclick="doTrial(${h.id})" ${h.inj?'disabled':''}>Demander un galop d'essai</button>`}
   </div>`:''}
   <div class="panel"><span class="lbl">Performances</span>${perfs}</div>
   <div class="panel"><span class="lbl">Gestion</span>${actions}</div>
