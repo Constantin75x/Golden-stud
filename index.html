@@ -456,6 +456,11 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .gauge i{display:block;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
 .gauge i b{display:block;height:100%;border-radius:5px}
 .gauge em{font-style:normal;text-align:right;color:var(--ink-2)}
+.wskills{margin:8px 0 12px}
+.wsk{display:grid;grid-template-columns:70px 1fr 44px;align-items:center;gap:8px;margin:5px 0;font-size:.82rem;color:var(--ink-2)}
+.wsk-t{height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden}
+.wsk-f{height:100%;border-radius:5px;background:var(--gold)}
+.wsk-v{text-align:right}
 </style>
 </head><body>
 <div id="app"></div>
@@ -1133,9 +1138,9 @@ function runRace(r){
   mine.forEach(e=>{const h=H(e.hid),jk=J(e.jk);
     field.push({name:h.name,sire:h.sire,hid:h.id,ci:h.ci,jk:jk?jk.n:'',mental:h.g.mental,jks:jk?jk.skill:.5,base:myBase(h,r,jk,e),sty:mySty(h,e),e,fitPre:h.fit,wOff:weeksOff(h),rr:recentRuns(h)})});
   const pace=paceOf(field.map(x=>x.sty));r.pace=pace;
-  field.forEach(x=>{x.perf=drawPerf(x,hx,mad,pace);if(x.hid){const h=H(x.hid);const off=isJ(r)?h.ORj:h.OR;x.raw=x.perf+(r.band&&off!=null?(off-r.lvl)*WADJ:0)}});
+  field.forEach(x=>{x.perf=drawPerf(x,hx,mad,pace);if(x.hid){const h=H(x.hid);x.perf+=workBonus(h,r);const off=isJ(r)?h.ORj:h.OR;x.raw=x.perf+(r.band&&off!=null?(off-r.lvl)*WADJ:0)}});
   if(isJ(r))field.forEach(f=>{const h=f.hid?H(f.hid):null;
-    let p=.03+(r.disc==='S'?.025:r.disc==='C'?.02:0)-(f.jks-.5)*.02;if(h)p+=(1-h.g.jump)*.05+(h.jruns<2?.02:0)+(1-h.fit/100)*.03;
+    let p=.03+(r.disc==='S'?.025:r.disc==='C'?.02:0)-(f.jks-.5)*.02;if(h)p+=(1-h.g.jump)*.05+(h.jruns<2?.02:0)+(1-h.fit/100)*.03+fallAdj(h,r);p=Math.max(.005,p);
     if(Math.random()<p){f.fell=true;f.fallAt=rand(.15,.92)}});
   const odds=winOdds(r,mine.map(e=>{const h=H(e.hid),jk=J(e.jk);return {k:h.name,base:myBase(h,r,jk,e),mental:h.g.mental,jks:jk?jk.skill:.5,sty:mySty(h,e)}}));
   field.forEach(f=>{const o=odds.find(x=>x.k===f.name);f.cote=o?cote(o.p):''});
@@ -1238,7 +1243,7 @@ function advanceWeek(){
         if(!raced&&Math.random()<P.risk*(1.6-h.g.sound)){const w=2+rint(6);h.inj=w;addLog(`Frais vétérinaires · ${h.name}`,-nice(900+w*350),'frais');news(`${h.name} s'est blessé à l'entraînement : ${w} semaines d'arrêt.`,'bad')}}
       h.wk++;ensureTraits(h);if(!h.broken){h.brk=(h.brk||0)+1;if(h.brk>=6){h.broken=true;news(`${h.name} est débourré : il peut commencer le vrai travail.`,'info')}}
       h.report=h.broken?trainerReport(h,t,raced):`${t?t.n:'L\'entraîneur'} : « Débourrage en cours (${h.brk}/6 semaines) : selle, filet, premiers canters. »`;
-      if(t&&t.d.includes('O')&&age>=3&&h.school<4){h.school++;if(h.school===4)news(`${h.name} est qualifié pour courir en obstacle.`)}
+      if(!raced||true)workWeek(h);
       if(h.wk===6&&!h.runs)news(`L'entraîneur de ${h.name} : « Niveau estimé ${levelLabel(h.cur+gauss()*4)}, ${distLabel(h.g.dist*Math.exp(gauss()*.08)).toLowerCase()}. »`,'info');
     }else if(h.status!=='stallion'){
       const tgt=h.g.pot*curve(age,h.g.prec);h.cur+=(tgt*.96-h.cur)*.03;h.fit=Math.min(h.status==='repos'?70:60,h.fit+5);
@@ -2358,7 +2363,8 @@ function openHorse(id){
   ${h.best?`<p class="best">Meilleure perf : ${esc(h.best)}</p>`:''}
   ${h.status==='training'?`<div class="panel"><span class="lbl" style="color:var(--gold)">Entraînement</span>
     ${h.report?`<p class="quote">${esc(h.report)}</p>`:''}
-    <label class="f"><span>Objectif de saison</span><select onchange="setTarget(${h.id},this.value)"><option value="">Aucun objectif</option>${upcomingFeats(40).filter(({f})=>(f.disc==='P')===(h.g.jump<.6||h.school<4)).filter(({f})=>{const a=ageAt(h,f.dt(yearOf(new Date(f.dt(curY())))));return true}).slice(0,24).map(({f,d})=>`<option value="${esc(f.n)}" ${h.target===f.n?'selected':''}>${esc(f.n)} · ${fd(d,{day:'numeric',month:'short',year:'numeric'})}</option>`).join('')}</select></label>
+    ${workPanel(h)}
+    <label class="f"><span>Objectif de saison</span><select onchange="setTarget(${h.id},this.value)"><option value="">Aucun objectif</option>${upcomingFeats(60).filter(({f})=>{const w=WORK[h.work||'poly'];return w.disc?(w.disc==='P'?f.disc==='P':w.disc==='C'?f.disc==='C'||f.disc==='S':f.disc===w.disc):(f.disc==='P')===(h.g.jump<.6||h.school<4)}).filter(({f})=>{const a=ageAt(h,f.dt(yearOf(new Date(f.dt(curY())))));return true}).slice(0,24).map(({f,d})=>`<option value="${esc(f.n)}" ${h.target===f.n?'selected':''}>${esc(f.n)} · ${fd(d,{day:'numeric',month:'short',year:'numeric'})}</option>`).join('')}</select></label>
     ${h.target?`<p class="small">${targetAdvice(h)}</p>`:''}
     <label class="f"><span>Programme de la semaine</span><select id="plan" onchange="setPlan(${h.id},this.value)">${Object.entries(PLANS).map(([k,p])=>`<option value="${k}" ${(h.plan||'normal')===k?'selected':''}>${p.l}</option>`).join('')}</select></label>
     <p class="small muted">${PLANS[h.plan||'normal'].d}</p>
@@ -3124,6 +3130,33 @@ function breakingWeek(h,force){if(h.status!=='debourrage')return;if(!h.brkT)h.br
 function fixBreaking(){(S.horses||[]).forEach(h=>{if(h.status==='training'&&h.broken===false){h.nextTr=h.trainer;h.brkWhere=h.brkWhere||'pro';h.status='debourrage'}if(h.status==='debourrage'&&!h.brkT)h.brkT=Date.now()})}
 function checkBreaking(){let n=0;(S.horses||[]).forEach(h=>{if(h.status==='debourrage'&&brkDays(h)>=BRK_DAYS){breakingWeek(h);n++}});if(n)save();return n}
 function setBrkWhere(id,w){const h=H(id);h.brkWhere=w;save();closeSheet(true);openHorse(id);renderMain()}
+
+/* ===================== TRAVAIL SPÉCIFIQUE : SUR QUOI LE CHEVAL TRAVAILLE =====================
+   Vitesse (plat court), tenue (plat long), haies, steeple, cross, ou polyvalent.
+   Le travail fait progresser une compétence (0 à 100 %) qui compte un peu en course :
+   jusqu'à ±1 point de performance, et moins de fautes sur les obstacles travaillés. */
+const WORK={
+ poly:{l:'Polyvalent',d:'Un peu de tout : bon pour un jeune ou un cheval qu\'on découvre.',k:null},
+ vitesse:{l:'Plat · vitesse',d:'Départs rapides, accélérations : pour les courses de 1 000 à 1 600 m.',k:'V',disc:'P'},
+ tenue:{l:'Plat · tenue',d:'Longs canters, fond : pour 2 100 m et plus.',k:'T',disc:'P'},
+ haies:{l:'Haies',d:'Scolarité sur les haies : sauter vite et bas.',k:'H',disc:'H',jump:1},
+ steeple:{l:'Steeple-chase',d:'Gros obstacles fixes (rivière, bull-finch) : sauter juste et sûr.',k:'S',disc:'S',jump:1},
+ cross:{l:'Cross-country',d:'Talus, banquettes, changements de terrain : agilité et endurance.',k:'C',disc:'C',jump:1},
+};
+const skl=h=>h.skl||(h.skl={V:.3,T:.3,H:h.school>=4?.5:0,S:h.school>=4?.4:0,C:0});
+function workWeek(h){const w=WORK[h.work||'poly'];const s=skl(h);const t=T(h.trainer);const q=.6+.6*(t?t.skill:.4);
+  Object.keys(s).forEach(k=>{if(w.k===k)s[k]=Math.min(1,s[k]+.09*q);else if(!w.k)s[k]=Math.min(1,s[k]+.025*q);else s[k]=Math.max(0,s[k]-.01)});
+  if((w.jump||!w.k)&&t&&t.d.includes('O')&&ageAt(h)>=3&&h.school<4){h.school++;if(h.school===4)news(`${disp(h)} est qualifié pour courir en obstacle.`)}}
+/* Effet en course : +/- 1 point selon la compétence travaillée, et moins de fautes */
+function workBonus(h,r){const s=skl(h);if(isJ(r)){const v=s[r.disc==='C'?'C':r.disc==='S'?'S':'H']||0;return (v-.5)*2}
+  const v=r.d<=1600?s.V:r.d>=2100?s.T:(s.V+s.T)/2;return (v-.4)*1.6}
+const fallAdj=(h,r)=>{const s=skl(h);const v=s[r.disc==='C'?'C':r.disc==='S'?'S':'H']||0;return -(v-.3)*.03};
+function setWork(id,v){const h=H(id);h.work=v;save();const q=()=>sheet.querySelector('.sh-in');const st=q().scrollTop;openHorse(id);q().scrollTop=st}
+const pct=v=>Math.round((v||0)*100);
+function workPanel(h){const s=skl(h);const t=T(h.trainer);const jumpTr=t&&t.d.includes('O');
+  return `<label class="f"><span>Travail spécifique</span><select onchange="setWork(${h.id},this.value)">${Object.entries(WORK).filter(([k,w])=>!w.jump||jumpTr).map(([k,w])=>`<option value="${k}" ${(h.work||'poly')===k?'selected':''}>${w.l}</option>`).join('')}</select></label>
+  <p class="small muted">${WORK[h.work||'poly'].d}${!jumpTr?' Les haies, le steeple et le cross demandent un entraîneur d\'obstacle.':''}</p>
+  <div class="wskills">${[['Vitesse',s.V],['Tenue',s.T],...(jumpTr||s.H>0?[['Haies',s.H],['Steeple',s.S],['Cross',s.C]]:[])].map(([n,v])=>`<div class="wsk"><div class="wsk-l">${n}</div><div class="wsk-t"><div class="wsk-f" style="width:${pct(v)}%"></div></div><div class="wsk-v">${pct(v)} %</div></div>`).join('')}</div>`}
 
 </script>
 
