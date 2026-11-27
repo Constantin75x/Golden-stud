@@ -1295,8 +1295,8 @@ function trainerReport(h,t,raced){
   if(h.fit>=92)return `${tn} : « Il est affûté, prêt à courir. ${pick(['Il a très bien galopé mardi.','Il a fait un bon travail sur la piste des Aigles.','Il respire bien, on peut y aller.'])} »`;
   return `${tn} : « Il progresse${h.fit>=80?', encore une petite semaine et il sera prêt':''}. »`;
 }
-/* Galop d'essai : un tous les 4 jours (vrais jours en mode temps réel), une fois par semaine en mode rapide */
-const TRIAL_MS=4*864e5;
+/* Galop d'essai : un tous les 3 jours (vrais jours en mode temps réel), une fois par semaine en mode rapide */
+const TRIAL_MS=3*864e5;
 function trialWait(h){if(!RT_ON())return h.lastWork===S.wk?1:0;return Math.max(0,(h.trialT||0)+TRIAL_MS-Date.now())}
 function trialGallop(h){
   const t=T(h.trainer);const est=h.cur-(100-h.fit)*.12+gauss()*3;h.lastWork=S.wk;h.trialT=Date.now();h.fit=Math.max(30,h.fit-3);
