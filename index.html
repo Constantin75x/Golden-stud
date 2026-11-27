@@ -461,6 +461,13 @@ details summary{cursor:pointer;color:var(--ink-2);margin:6px 0}
 .wsk-t{height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden}
 .wsk-f{height:100%;border-radius:5px;background:var(--gold)}
 .wsk-v{text-align:right}
+.trc{margin-bottom:12px}
+.trh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.trh b{font-size:1.1rem;cursor:pointer}
+.trstats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.82rem;color:var(--ink-2);margin:6px 0}
+.trstats b{color:var(--ink)}
+.trsel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.trsel .f{margin:4px 0}
 </style>
 </head><body>
 <div id="app"></div>
@@ -2298,8 +2305,8 @@ function horseCard(h){
   return `<button class="card hcard" onclick="openHorse(${h.id})"><div class="hc-top"><div class="pt">${horsePhoto(Object.assign(horseLook(h),{foal:ageAt(h)<=1,rug:h.status==='training'?S.silk:null}),{w:120,seed:h.id})}</div><div><b>${esc(disp(h))}</b><span class="muted">${ageTxt(h)} · ${sexTxt(h)} · par ${esc(h.sire)}${tr&&h.status==='training'?' · '+tr.n:''}</span></div></div><div class="hc-bot">${val}<div class="tags">${tags.join('')}</div></div></button>`;
 }
 function jkFor(rid){const r=S.races[rid];const h=H(+$('#eh').value);const p=prefJk(h,r);if(p)$('#ej').value=p}
-function stableTabs(){return `<div class="opts filter seg">${[['horses','Mes chevaux'],['irl','Suivi réel'],['team','Équipe']].map(([k,n])=>`<button class="opt" aria-pressed="${(U.stv||'horses')===k}" onclick="U.stv='${k}';renderMain()">${n}</button>`).join('')}</div>`}
-function viewStable(){if(U.stv==='irl')return `${tag('Écurie')}<h2>Suivi en vrai</h2>${stableTabs()}${viewSuivi()}`;if(U.stv==='team')return `${tag('Écurie')}<h2>Mon équipe</h2>${stableTabs()}${viewTeam()}`;
+function stableTabs(){return `<div class="opts filter seg">${[['horses','Mes chevaux'],['train','Entraînement'],['irl','Suivi réel'],['team','Équipe']].map(([k,n])=>`<button class="opt" aria-pressed="${(U.stv||'horses')===k}" onclick="U.stv='${k}';renderMain()">${n}</button>`).join('')}</div>`}
+function viewStable(){if(U.stv==='train')return `${tag('Écurie')}<h2>Entraînement</h2>${stableTabs()}${viewTraining()}`;if(U.stv==='irl')return `${tag('Écurie')}<h2>Suivi en vrai</h2>${stableTabs()}${viewSuivi()}`;if(U.stv==='team')return `${tag('Écurie')}<h2>Mon équipe</h2>${stableTabs()}${viewTeam()}`;
   const grp=[['training','À l\'entraînement'],['debourrage','Au débourrage'],['repos','Au repos'],['haras','Jeunes au haras'],['broodmare','Poulinières'],['stallion','Étalons']];
   if(!S.horses.length)return `${tag('Écurie')}<h2>Aucun cheval</h2>${stableTabs()}<div class="panel"><p>Ton écurie est vide. Les catalogues Arqana t'attendent.</p><button class="btn" onclick="U.tab='sales';go(renderMain)">Voir les ventes</button></div>`;
   return `${tag('Écurie')}<h2>${S.horses.length} cheva${S.horses.length>1?'ux':'l'}</h2>${stableTabs()}`+grp.map(([k,n])=>{const l=S.horses.filter(h=>h.status===k);return l.length?`<span class="lbl">${n} · ${l.length}</span><div class="grid">${l.map(horseCard).join('')}</div>`:''}).join('')+
@@ -3157,6 +3164,24 @@ function workPanel(h){const s=skl(h);const t=T(h.trainer);const jumpTr=t&&t.d.in
   return `<label class="f"><span>Travail spécifique</span><select onchange="setWork(${h.id},this.value)">${Object.entries(WORK).filter(([k,w])=>!w.jump||jumpTr).map(([k,w])=>`<option value="${k}" ${(h.work||'poly')===k?'selected':''}>${w.l}</option>`).join('')}</select></label>
   <p class="small muted">${WORK[h.work||'poly'].d}${!jumpTr?' Les haies, le steeple et le cross demandent un entraîneur d\'obstacle.':''}</p>
   <div class="wskills">${[['Vitesse',s.V],['Tenue',s.T],...(jumpTr||s.H>0?[['Haies',s.H],['Steeple',s.S],['Cross',s.C]]:[])].map(([n,v])=>`<div class="wsk"><div class="wsk-l">${n}</div><div class="wsk-t"><div class="wsk-f" style="width:${pct(v)}%"></div></div><div class="wsk-v">${pct(v)} %</div></div>`).join('')}</div>`}
+
+/* ===================== ONGLET ENTRAÎNEMENT =====================
+   Tous les chevaux au travail sur une page : travail spécifique, programme, galop d'essai, compétences. */
+function trainSet(id,k,v){const h=H(id);if(k==='work')h.work=v;else h.plan=v;save();renderMain()}
+function trainTrial(id){const h=H(id);if(h.inj||trialWait(h))return;h.trial=trialGallop(h);save();renderMain()}
+function viewTraining(){const L=S.horses.filter(h=>h.status==='training'||h.status==='debourrage').sort((a,b)=>(a.status>b.status?1:-1)||a.id-b.id);
+  if(!L.length)return `<div class="panel"><p>Aucun cheval à l'entraînement pour l'instant.</p><p class="small muted">Confie un cheval à un entraîneur depuis sa fiche ou depuis l'onglet Équipe. Un jeune passe d'abord 6 jours au débourrage.</p></div>`;
+  return L.map(h=>{const t=T(h.trainer);
+    if(h.status==='debourrage')return `<div class="panel trc"><div class="trh"><b onclick="openHorse(${h.id})">${esc(disp(h))}</b><span class="pill">Débourrage ${brkDays(h)}/6 j</span></div><p class="small muted">${h.brkWhere==='home'?'Chez toi':'Chez un débourreur'}${h.nextTr&&T(h.nextTr)?' · puis '+esc(T(h.nextTr).n):''}</p></div>`;
+    const s=skl(h);const jumpTr=t&&t.d.includes('O');const w=trialWait(h);
+    return `<div class="panel trc"><div class="trh"><b onclick="openHorse(${h.id})">${esc(disp(h))}</b><span class="muted small">${t?esc(t.n):''}${h.inj?' · <span class="neg">blessé</span>':''}</span></div>
+     <div class="trstats"><span>Forme <b>${Math.round(h.fit)}</b></span><span>${isFinite(h.OR)&&h.OR?'Valeur plat <b>'+kg(h.OR)+'</b>':''}${h.ORj?' · obstacle <b>'+kg(h.ORj)+'</b>':''}</span>${h.target?`<span>Objectif <b>${esc(h.target)}</b></span>`:''}</div>
+     ${h.report?`<p class="quote small">${esc(h.report)}</p>`:''}
+     <div class="trsel"><label class="f"><span>Travail</span><select onchange="trainSet(${h.id},'work',this.value)">${Object.entries(WORK).filter(([k,x])=>!x.jump||jumpTr).map(([k,x])=>`<option value="${k}" ${(h.work||'poly')===k?'selected':''}>${x.l}</option>`).join('')}</select></label>
+     <label class="f"><span>Programme</span><select onchange="trainSet(${h.id},'plan',this.value)">${Object.entries(PLANS).map(([k,p])=>`<option value="${k}" ${(h.plan||'normal')===k?'selected':''}>${p.l}</option>`).join('')}</select></label></div>
+     <div class="wskills">${[['Vitesse',s.V],['Tenue',s.T],...(jumpTr||s.H>0?[['Haies',s.H],['Steeple',s.S],['Cross',s.C]]:[])].map(([n,v])=>`<div class="wsk"><div class="wsk-l">${n}</div><div class="wsk-t"><div class="wsk-f" style="width:${pct(v)}%"></div></div><div class="wsk-v">${pct(v)} %</div></div>`).join('')}</div>
+     ${h.trial&&h.trialT?`<p class="quote small">${esc(h.trial)}<br><span class="muted">Galop du ${new Date(h.trialT).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</span></p>`:''}
+     ${w?`<p class="small muted">Prochain galop d'essai ${RT_ON()?'dans '+Math.ceil(w/864e5)+' j':'la semaine prochaine'}.</p>`:`<button class="btn ghost" ${h.inj?'disabled':''} onclick="trainTrial(${h.id})">Galop d'essai</button>`}</div>`}).join('')}
 
 </script>
 
